@@ -248,14 +248,6 @@ RETRY:
             NodeGetLastError();
             while ( 1 )
             {
-#if 0
-                memset(userScan, 0, COMMAND_SIZE);
-                scanf_s("%s", userScan, COMMAND_SIZE);
-                printf_s("%s\n", userScan);
-                CLEAN_STDIN();
-                CommandParse(userScan);
-                NodeGetLastError();
-#endif
                 memset(userScan, 0, sizeof(userScan));
                 if ( fgets(userScan, COMMAND_SIZE, stdin) != NULL )
                 {
