@@ -43,8 +43,10 @@ static size_t userDataPassSpace = 0;
  */
 static size_t userDataCnt = 0;
 
+#if NODE_DEBUG
 static command_node* compare1 = NULL, * compare2 = NULL;
 static parameter_node* compare3 = NULL, * compare4 = NULL;
+#endif
 
 #define CHECK_BUF(buf) do{\
 if(buf==NULL){\
@@ -52,6 +54,7 @@ free(buf);\
 return lastError = NODE_ALLOC_ERR;\
 }}while(0)
 
+#if NODE_DEBUG
 /**
  * @brief 打印指定节点的左右临近节点命令名
  * @param CmdNode 命令节点
@@ -74,6 +77,7 @@ static int printCmdNode_command(command_node* CmdNode)
                  ((command_node*)(CmdNode->next))->command);
     return NODE_OK;
 }
+#endif
 
 /**
  * @brief 可解析的字符( 命令用 )
@@ -355,20 +359,13 @@ void showList(void)
         (node->isWch)
             ? wprintf(L"%llu:command  <%ls>(isWch)     ", cnt++, node->command_w)
             : printf("%llu:command  <%s>     ", cnt++, node->command);
-#if 0
-        printf("%u %u %u %u %u",
-               *(node->command_w),
-               *((node->command_w) + 1),
-               *((node->command_w) + 2),
-               *((node->command_w) + 3),
-               *((node->command_w) + 4));
-#endif
         showParam(node);
         node = node->next;
     } while ( node != FristNode ); // 为了保证遍历完整
     putchar('\n');
 }
 
+#if NODE_DEBUG
 /**
  * @brief 检查当前命令节点是否有重复的命令
  * @param
@@ -470,6 +467,7 @@ static int RepeatingParamCheck(const command_node* CmdNode)
     } while ( outer != CmdNode->ParameterNode_head );
     return NODE_OK;
 }
+#endif
 
 /**
  * @brief 寻找命令节点
@@ -642,7 +640,6 @@ int RegisterCommand(const bool isWch,
  */
 int unRegisterAllParameters(command_node* node)
 {
-    size_t cnt = 0;
     parameter_node* tmp = NULL, * nextNode = NULL;
     if ( node == NULL )
         return lastError = NODE_ARG_ERR;
@@ -755,7 +752,6 @@ static parameter_node* FindParameter(const command_node* node,
 int unRegisterCommand(char* command, wchar_t* commandW)
 {
     command_node* CmdNode = NULL;// 要被删除的命令节点
-    command_node* tmp = FristNode;
     int ret = 0;
     if ( command == NULL && commandW == NULL )
     {
@@ -1892,7 +1888,7 @@ static void regDelCmd(void* arg)
 static void regDelAllParam(void* arg)
 {
     userString* data = (userString*)arg;
-    char* cmd[MAX_COMMAND] = {0};
+    char cmd[MAX_COMMAND] = {0};
     command_node* cmdNode = NULL;
     if ( data == NULL )
     {
@@ -1930,10 +1926,8 @@ static void regDelAllParam(void* arg)
 static void regDelParam(void* arg)
 {
     userString* data = (userString*)arg;
-    const char* str = (char*)arg, * space = " ";
     char cmdArr[MAX_COMMAND] = {0},
         paramArr[MAX_PARAMETER] = {0};
-    char* tmp = NULL;
     size_t dataCnt = NodeGetUserParamsCnt();
     command_node* cmdNode = NULL;
     if ( data == NULL )
