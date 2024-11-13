@@ -1345,11 +1345,13 @@ static void* ParseSpace(const char* userParam)
         userDataCnt++;
         passLen += str - userParam;
         userData = (userString*)realloc(tmp, userDataCnt * sizeof(userString));
+#if 0
         if ( userData == tmp )
         {
             free(userData);
             return userData = NULL;
         }
+#endif
         if ( userData == NULL )
         {
             printf("<%s>alloc memory fail\n", __func__);
@@ -1414,11 +1416,13 @@ static void* ParseSpaceW(const wchar_t* userParam)
         userDataCnt++;
         passLen += str - userParam;
         userData = (userString*)realloc(tmp, userDataCnt * sizeof(userString));
+#if 0
         if ( userData == tmp )
         {
             free(userData);
             return userData = NULL;
         }
+#endif
         if ( userData == NULL )
         {
             printf("<%s>alloc memory fail\n", __func__);
