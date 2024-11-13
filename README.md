@@ -55,25 +55,18 @@
 ##### INCLUDE:
 
 - stdio.h
-
 - string.h
-
 - wchar.h
-
 - stdlib.h
+- stdbool.h
 
 ##### FUNCTIONS USED:
 
 - malloc & free
-
 - printf & wprintf
-
 - strlen & wcslen
-
 - strcpy & wcscpy
-
 - strcmp & wcscmp
-
 - memcpy
 
 ----
@@ -95,13 +88,9 @@ int RegisterCommand(const bool isWch,
 #### RETURN:
 
 - NODE_OK
-
 - NODE_ARG_ERR
-
 - NODE_CMD_TOO_LONG
-
 - NODE_REPEATING
-
 - NODE_FAIL
 
 ##### note:
@@ -123,15 +112,10 @@ int unRegisterCommand(char* command, wchar_t* commandW);
 #### RETURN:
 
 * NODE_OK
-
 * NODE_ARG_ERR
-
 * NODE_CMD_TOO_LONG
-
 * NODE_NOT_YET_INIT
-
 * NODE_NOT_FIND_CMD
-
 * NODE_FAIL
 
 ##### note:
@@ -149,9 +133,7 @@ int unRegisterAllCommand(void);
 #### RETURN:
 
 - NODE_OK
-
 - NODE_FAIL
-
 - NODE_NOT_YET_INIT
   
   -------
@@ -193,15 +175,10 @@ int updateCommand(char* oldCommand, wchar_t* oldCommandW,
 #### RETURN:
 
 - NODE_OK
-
 - NODE_ARG_ERR
-
 - NODE_NOT_FIND_CMD
-
 - NODE_REPEATING
-
 - NODE_NOT_YET_INIT
-
 - NODE_FAIL
 
 ##### note:
@@ -230,15 +207,10 @@ int RegisterParameter(command_node* node,
 #### RETURN:
 
 - NODE_OK
-
 - NODE_ARG_ERR
-
 - NODE_CMD_NODE_NULL
-
 - NODE_PARAM_TOO_LONG
-
 - NODE_REPEATING
-
 - NODE_FAIL
 
 ##### note:
@@ -260,9 +232,7 @@ int unRegisterAllParameters(command_node* node);
 #### RETURN:
 
 - NODE_OK
-
 - NODE_ARG_ERR
-
 - NODE_PARAM_NODE_NULL
   
   ------
@@ -282,13 +252,9 @@ int unRegisterParameter(command_node* node,
 #### RETURN:
 
 - NODE_OK
-
 - NODE_ARG_ERR
-
 - NODE_NOT_FIND_PARAM
-
 - NODE_PARAM_TOO_LONG
-
 - NODE_FAIL
   
   --------
@@ -311,11 +277,8 @@ int updateParameter(const command_node* CmdNode, ParameterHandler hook,
 #### RETURN:
 
 - NODE_OK
-
 - NODE_ARG_ERR
-
 - NODE_REPEATING
-
 - NODE_NOT_FIND_PARAM
   
   --------
@@ -333,19 +296,12 @@ int CommandParse(const char* commandString);
 #### RETURN:
 
 - NODE_OK
-
 - NODE_ARG_ERR
-
 - NODE_CMD_TOO_LONG
-
 - NODE_PARAM_TOO_LONG
-
 - NODE_NOT_FIND_CMD
-
 - NODE_NOT_FIND_PARAM
-
 - NODE_PARSE_ERR
-
 - NODE_NOT_YET_INIT
   
   
@@ -369,19 +325,12 @@ int CommandParseW(const wchar_t* commandString);
 #### RETURN:
 
 - NODE_OK
-
 - NODE_ARG_ERR
-
 - NODE_CMD_TOO_LONG
-
 - NODE_PARAM_TOO_LONG
-
 - NODE_NOT_FIND_CMD
-
 - NODE_NOT_FIND_PARAM
-
 - NODE_PARSE_ERR
-
 - NODE_NOT_YET_INIT
   
   
