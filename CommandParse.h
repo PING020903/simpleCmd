@@ -30,7 +30,9 @@
 
 #define MAX_COMMAND 16
 #define MAX_PARAMETER 16
-#define COMMAND_SIZE 1024
+#define COMMAND_SIZE 128
+
+#define GET_RAW_STRING 0 // 是否获得原始字符串
 
 
 #ifndef WCHAR_MIN
@@ -55,11 +57,22 @@ typedef struct {
 typedef struct {
     void* prev;// 上一节点
     void* next;// 下一节点
+    bool isRawStr;// 传递参数的形式是否为原字符串
     char parameter[MAX_PARAMETER];// 参数字符串
     wchar_t parameter_w[MAX_PARAMETER];// 参数字符串( 宽字符 )
     void* handlerArg;// handler 的参数
     ParameterHandler handler;// 参数处理
 }parameter_node;// 参数节点
+
+typedef struct {
+    void* command;// 命令名称
+    void* node;// 节点地址
+}command_info;// 命令节点信息
+
+typedef struct {
+    void* strHead;
+    size_t len;
+}userString;// 用户字符串
 
 void showParam(command_node* CmdNode);
 
@@ -83,6 +96,7 @@ int unRegisterAllCommand(void);
 
 int RegisterParameter(command_node* node,
                       ParameterHandler hook,
+                      const bool isRaw,
                       const char* param,
                       const wchar_t* paramW);
 
@@ -91,8 +105,13 @@ int unRegisterParameter(command_node* node,
                         const wchar_t* paramW);
 
 int updateParameter(const command_node* CmdNode, ParameterHandler hook,
+                    const bool isRaw,
                     const char* oldParam, const wchar_t* oldParamW,
                     const char* newParam, const wchar_t* newParamW);
+
+int NodeGetCommandMap(command_info** map);
+
+size_t NodeGetUserParamsCnt();
 
 int CommandParse(const char* commandString);
 
@@ -104,5 +123,7 @@ int CommandParseW(const wchar_t* commandString);
 #endif // WCHAR_MIN
 
 int NodeGetLastError(void);
+
+int defaultRegCmd_init(void);
 
 #endif  // __COMMAND_PARSE_H__

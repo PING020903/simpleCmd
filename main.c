@@ -5,7 +5,7 @@
 #include "CommandParse.h"
 #include "main.h"
 
-#define USER_CMD "REG"
+#define USER_CMD "Rgb"
 #define USER_REG_CMD "cmd"
 #define USER_DELALL_CMD "DelAllCmd"
 #define USER_DELALL_PARAM "DelAllParam"
@@ -136,7 +136,7 @@ static void regParam(void* arg)
     funcAdd = (void*)strtoull(cmd, cmd + strlen(cmd), 16);
     printf("parse funcAdd:<%llu><%llx>\n", funcAdd, funcAdd);
     func = (void*)funcAdd;
-    RegisterParameter(cmdNode, func, paramArr, NULL);
+    RegisterParameter(cmdNode, func, 0, paramArr, NULL);
     NodeGetLastError();
     printf("----%s----\n", __func__);
 }
@@ -145,6 +145,31 @@ static void delAllCmd(void* arg)
 {
     unRegisterAllCommand();
     printf("----%s----\n", __func__);
+}
+
+static void userShowList(void* arg)
+{
+    int len = 0;
+    command_info* map = NULL;
+    len = NodeGetCommandMap(&map);
+    if ( len == 0 || map == NULL )
+    {
+        printf("get list map fail, len:%d, map:%p\n", len, map);
+        free(map);
+        return;
+    }
+
+    for ( size_t i = 0; i < len; i++ )
+    {
+        (((command_node*)((map + i)->node))->isWch)
+            ? wprintf(L"command:<%ls>  %u\n",
+                      (wchar_t*)((map + i)->command), (unsigned int)i)
+            : printf("command:<%s>  %u\n",
+                     (char*)((map + i)->command), (unsigned int)i);
+    }
+    printf("----%s----\n", __func__);
+    free(map);
+    return;
 }
 
 
@@ -167,7 +192,7 @@ RETRY:
             cmdRet(unRegisterAllCommand());
 
             node = FindCommand("test1", NULL);
-            cmdRet(RegisterParameter(node, NULL, "TEST1", NULL));
+            cmdRet(RegisterParameter(node, NULL, 0, "TEST1", NULL));
 
             cmdRet(RegisterCommand(0, "TEST1", NULL));
             cmdRet(RegisterCommand(0, "TEST2", NULL));
@@ -175,34 +200,34 @@ RETRY:
             cmdRet(RegisterCommand(1, NULL, L"shit"));
 
             node = FindCommand("test1", NULL);
-            cmdRet(RegisterParameter(node, NULL, "param3", NULL));
-            cmdRet(RegisterParameter(node, NULL, "param1", NULL));
+            cmdRet(RegisterParameter(node, NULL, 0, "param3", NULL));
+            cmdRet(RegisterParameter(node, NULL, 0, "param1", NULL));
 
-            cmdRet(RegisterParameter(node, NULL, NULL, L"TEST1"));
-            cmdRet(RegisterParameter(node, NULL, "param3", NULL));
-            cmdRet(RegisterParameter(node, NULL, "param4", NULL));
-            cmdRet(RegisterParameter(node, NULL, "Param4", NULL));
-            cmdRet(RegisterParameter(node, myFunc, "param5", NULL));
+            cmdRet(RegisterParameter(node, NULL, 0, NULL, L"TEST1"));
+            cmdRet(RegisterParameter(node, NULL, 0, "param3", NULL));
+            cmdRet(RegisterParameter(node, NULL, 0, "param4", NULL));
+            cmdRet(RegisterParameter(node, NULL, 0, "Param4", NULL));
+            cmdRet(RegisterParameter(node, myFunc, 0, "param5", NULL));
 
             cmdRet(unRegisterParameter(node, "param1", NULL));
             cmdRet(unRegisterParameter(node, NULL, L"param1"));
             cmdRet(unRegisterParameter(node, "param3", NULL));
 
-            cmdRet(updateParameter(node, NULL, "Param4", NULL, "4Param", NULL));
-            cmdRet(updateParameter(node, NULL, "4Param", NULL, "param5", NULL));
-            cmdRet(updateParameter(node, NULL, "Param4", NULL, NULL, NULL));
-            cmdRet(updateParameter(node, NULL, NULL, NULL, "Param4", NULL));
-            cmdRet(updateParameter(node, NULL, NULL, L"Param4", NULL, L"Param4"));
+            cmdRet(updateParameter(node, NULL, 0, "Param4", NULL, "4Param", NULL));
+            cmdRet(updateParameter(node, NULL, 0, "4Param", NULL, "param5", NULL));
+            cmdRet(updateParameter(node, NULL, 0, "Param4", NULL, NULL, NULL));
+            cmdRet(updateParameter(node, NULL, 0, NULL, NULL, "Param4", NULL));
+            cmdRet(updateParameter(node, NULL, 0, NULL, L"Param4", NULL, L"Param4"));
 
             node = FindCommand("test6", NULL);
-            cmdRet(RegisterParameter(node, NULL, "TEST1", NULL));
+            cmdRet(RegisterParameter(node, 0, NULL, "TEST1", NULL));
 
             node = FindCommand(NULL, L"shit");
-            cmdRet(RegisterParameter(node, myFunc2, NULL, L"shitParam"));
+            cmdRet(RegisterParameter(node, myFunc2, 1, NULL, L"shitParam"));
 
             node = FindCommand("你", NULL);
-            cmdRet(RegisterParameter(node, myFunc2, "MB参数", NULL));
-            cmdRet(updateParameter(node, myFunc2, "MB参数", NULL, "参数MB", NULL));
+            cmdRet(RegisterParameter(node, myFunc2, 1, "MB参数", NULL));
+            cmdRet(updateParameter(node, myFunc2, 1, "MB参数", NULL, "参数MB", NULL));
 
             cmdRet(updateCommand("test1", NULL, "test3", NULL));
             cmdRet(updateCommand("test2", NULL, "test3", NULL));
@@ -222,32 +247,35 @@ RETRY:
         }
         break;
         case 3:
+            defaultRegCmd_init();
+
             RegisterCommand(0, USER_CMD, NULL);
             NodeGetLastError();
 
             node = FindCommand(USER_CMD, NULL);
-            RegisterParameter(node, showList, "list", NULL);
-            NodeGetLastError();
+            RegisterParameter(node, showList, 1, "list", NULL);
+            RegisterParameter(node, myFunc2, 1, "!?", NULL);
+            RegisterParameter(node, myFunc, 1, "??!", NULL);
+            RegisterParameter(node, exit, 1, "exit", NULL);
+            RegisterParameter(node, regCmd, 1, "cmd", NULL);
+            RegisterParameter(node, regParam, 1, "param", NULL);
+            RegisterParameter(node, delAllCmd, 1, "delAllCmd", NULL);
+            RegisterParameter(node, userShowList, 1, "ls", NULL);
 
-            RegisterParameter(node, myFunc2, "!?", NULL);
-            NodeGetLastError();
+            RegisterCommand(0, "USER_CMD", NULL);
+            RegisterCommand(1, NULL, L"NULL");
+            RegisterCommand(1, NULL, L"USER_CMD");
 
-            RegisterParameter(node, myFunc, "??!", NULL);
-            NodeGetLastError();
-
-            RegisterParameter(node, exit, "exit", NULL);
-            NodeGetLastError();
-
-            RegisterParameter(node, regCmd, "cmd", NULL);
-            NodeGetLastError();
-
-            RegisterParameter(node, regParam, "param", NULL);
-            NodeGetLastError();
-
-            RegisterParameter(node, delAllCmd, "delAllCmd", NULL);
-            NodeGetLastError();
             while ( 1 )
             {
+#if 0
+                memset(userScan, 0, COMMAND_SIZE);
+                scanf_s("%s", userScan, COMMAND_SIZE);
+                printf_s("%s\n", userScan);
+                CLEAN_STDIN();
+                CommandParse(userScan);
+                NodeGetLastError();
+#endif
                 memset(userScan, 0, sizeof(userScan));
                 if ( fgets(userScan, COMMAND_SIZE, stdin) != NULL )
                 {
