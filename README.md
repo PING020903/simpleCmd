@@ -48,6 +48,8 @@
 
 - `param`不支持输入字符`(space)`
 
+- 若传入到用户注册函数的是源字符串，请用户不要妄图修改源字符串，因为它实际上是`const`属性
+
 ---------
 
 ### *transplantation*：
@@ -55,18 +57,25 @@
 ##### INCLUDE:
 
 - stdio.h
+
 - string.h
+
 - wchar.h
+
 - stdlib.h
-- stdbool.h
 
 ##### FUNCTIONS USED:
 
 - malloc & free
+
 - printf & wprintf
+
 - strlen & wcslen
+
 - strcpy & wcscpy
+
 - strcmp & wcscmp
+
 - memcpy
 
 ----
@@ -81,9 +90,7 @@ int RegisterCommand(const bool isWch,
 
 `isWch`: 是否使用宽字符支持
 
-`command`: 非宽字符的命令
-
-`commandW`: 宽字符的命令
+`command`: 命令的字符串
 
 #### RETURN:
 
@@ -111,12 +118,12 @@ int unRegisterCommand(char* command, wchar_t* commandW);
 
 #### RETURN:
 
-* NODE_OK
-* NODE_ARG_ERR
-* NODE_CMD_TOO_LONG
-* NODE_NOT_YET_INIT
-* NODE_NOT_FIND_CMD
-* NODE_FAIL
+- NODE_OK
+- NODE_ARG_ERR
+- NODE_CMD_TOO_LONG
+- NODE_NOT_YET_INIT
+- NODE_NOT_FIND_CMD
+- NODE_FAIL
 
 ##### note:
 
@@ -133,7 +140,9 @@ int unRegisterAllCommand(void);
 #### RETURN:
 
 - NODE_OK
+
 - NODE_FAIL
+
 - NODE_NOT_YET_INIT
   
   -------
@@ -192,17 +201,17 @@ int updateCommand(char* oldCommand, wchar_t* oldCommandW,
 ```c
 int RegisterParameter(command_node* node,
                       ParameterHandler hook,
-                      const char* param,
-                      const wchar_t* paramW);
+                      const bool isRaw,
+                      const void* paramStr);
 ```
 
 `node`: 注册参数的命令
 
 `hook`: 参数的处理函数
 
-`param`: 参数
+`isRaw`: 是否给 `hook` 传递源字符串
 
-`paramW`: 参数( 宽字符 )
+`param`: 参数
 
 #### RETURN:
 
@@ -232,7 +241,9 @@ int unRegisterAllParameters(command_node* node);
 #### RETURN:
 
 - NODE_OK
+
 - NODE_ARG_ERR
+
 - NODE_PARAM_NODE_NULL
   
   ------
@@ -241,20 +252,22 @@ int unRegisterAllParameters(command_node* node);
 
 ```c
 int unRegisterParameter(command_node* node,
-                        const char* param,
-                        const wchar_t* paramW);
+                        const void* paramStr);
 ```
 
   `node`: 要被删除参数的命令
-  `para`: 参数
-  `paraW`: 参数( 宽字符 )
+  `paraStr`: 参数
 
 #### RETURN:
 
 - NODE_OK
+
 - NODE_ARG_ERR
+
 - NODE_NOT_FIND_PARAM
+
 - NODE_PARAM_TOO_LONG
+
 - NODE_FAIL
   
   --------
@@ -262,23 +275,24 @@ int unRegisterParameter(command_node* node,
 ### 更新参数`updateParameter`
 
 ```c
-int updateParameter(const command_node* CmdNode, ParameterHandler hook,
-                    const char* oldParam, const wchar_t* oldParamW,
-                    const char* newParam, const wchar_t* newParamW);
+int updateParameter(cconst command_node* CmdNode, ParameterHandler hook,
+                    const bool isRaw, const void* oldParam, const void* newParam);
 ```
 
   `CmdNode`: 要被更改参数的命令
   `hook`: 参数处理函数
-  `oldParam`: 旧参数
-  `oldParamW`: 旧参数( 宽字符 )
+  `isRaw`: 是否给 `hook` 传递源字符串
+  `oldParam`: 旧参数( 宽字符 )
   `newParam`: 新参数
-  `newParamW`: 新参数( 宽字符 )
 
 #### RETURN:
 
 - NODE_OK
+
 - NODE_ARG_ERR
+
 - NODE_REPEATING
+
 - NODE_NOT_FIND_PARAM
   
   --------
@@ -411,4 +425,8 @@ static void _list(void)
 
 于是我自己写了这个能满足我需求的终端。
 
-2024.11.14
+-----
+
+创建于`2024-11-11 20:44`
+
+修改时间`2024-18 6:37`

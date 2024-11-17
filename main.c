@@ -79,6 +79,7 @@ static void myFunc2(void* arg)
     printf(" %s %p----------\n", __func__, myFunc2);
 }
 
+
 static void regCmd(void* arg)
 {
     const char* str = (char*)arg;
@@ -90,7 +91,8 @@ static void regCmd(void* arg)
     cmdNode = FindCommand(str, NULL);
     if ( cmdNode == NULL )
     {
-        RegisterCommand(0, str, NULL);
+
+        RegisterCommand(0, str);
         NodeGetLastError();
         printf("----%s----\n", __func__);
     }
@@ -104,7 +106,7 @@ static void regCmd(void* arg)
 static void regParam(void* arg)
 {
     const char* str = (char*)arg;
-    char* cmd = NULL, * param = NULL;
+    const char* cmd = NULL, * param = NULL, * tmp = NULL;
     void* func = NULL;
     unsigned long long funcAdd = 0;
     char cmdArr[MAX_COMMAND] = {0}, paramArr[MAX_PARAMETER] = {0};
@@ -133,10 +135,10 @@ static void regParam(void* arg)
     cmd += 1;
     if ( cmd == NULL )
         return;
-    funcAdd = (void*)strtoull(cmd, cmd + strlen(cmd), 16);
+    funcAdd = strtoull(cmd, &tmp, 16);
     printf("parse funcAdd:<%llu><%llx>\n", funcAdd, funcAdd);
     func = (void*)funcAdd;
-    RegisterParameter(cmdNode, func, 0, paramArr, NULL);
+    RegisterParameter(cmdNode, func, 0, paramArr);
     NodeGetLastError();
     printf("----%s----\n", __func__);
 }
@@ -162,10 +164,10 @@ static void userShowList(void* arg)
     for ( size_t i = 0; i < len; i++ )
     {
         (((command_node*)((map + i)->node))->isWch)
-            ? wprintf(L"command:<%ls>  %u\n",
-                      (wchar_t*)((map + i)->command), (unsigned int)i)
-            : printf("command:<%s>  %u\n",
-                     (char*)((map + i)->command), (unsigned int)i);
+            ? wprintf(L"  %u command:<%ls>(isWch)\n",
+                      (unsigned int)i, (wchar_t*)((map + i)->command))
+            : printf("  %u command:<%s>\n",
+                     (unsigned int)i, (char*)((map + i)->command));
     }
     printf("----%s----\n", __func__);
     free(map);
@@ -179,7 +181,7 @@ int main(int argc, char* argv[])
     command_node* node;
     char userScan[COMMAND_SIZE] = {0};
     static const char* errTip = "输入错误...please retry(input 1 or 0):\n";
-    printf("Hello World!\n%s\ninput (2 test, 3 register):",
+    printf("Hello World!\n%s\ninput (1 test, 3 register):",
            TSET_STR);
 RETRY:
     ret = scanf_s("%d", &type);
@@ -187,96 +189,68 @@ RETRY:
     ERR_GOTO(!ret, errTip, RETRY);
     switch ( type )
     {
-        case 2:
+        case 1:
         {
-            cmdRet(unRegisterAllCommand());
+            cmdRet(RegisterCommand(0, "command_TEST"));
+            cmdRet(RegisterCommand(1, L"WIDTH_cmd"));
 
-            node = FindCommand("test1", NULL);
-            cmdRet(RegisterParameter(node, NULL, 0, "TEST1", NULL));
+            cmdRet(updateCommand("command_TEST", NULL, "TEST_CMD", NULL));
 
-            cmdRet(RegisterCommand(0, "TEST1", NULL));
-            cmdRet(RegisterCommand(0, "TEST2", NULL));
-            cmdRet(RegisterCommand(0, "你", NULL));
-            cmdRet(RegisterCommand(1, NULL, L"shit"));
+            node = FindCommand("TEST_CMD", NULL);
+            cmdRet(RegisterParameter(node, NULL, 0, "SHIT"));
+            cmdRet(RegisterParameter(node, myFunc2, 1, "shit"));
+            cmdRet(RegisterParameter(node, userShowList, 0, "list"));
+#if 0
+            cmdRet(RegisterCommand(0, "WIDTH"));
+            node = FindCommand("WIDTH", NULL);
+            // 注册char模式的命令下注册宽字符参数只截取了首个字符's',
+            // 参数的字符解析模式跟随命令注册时的"是否使用宽字符"这个选项
+            cmdRet(RegisterParameter(node, NULL, 0, L"shit"));
+#endif
+            cmdRet(updateParameter(node, NULL, 0, "SHIT", "MY_SHIT"));
+            cmdRet(unRegisterParameter(node, "MY_SHIT"));
 
-            node = FindCommand("test1", NULL);
-            cmdRet(RegisterParameter(node, NULL, 0, "param3", NULL));
-            cmdRet(RegisterParameter(node, NULL, 0, "param1", NULL));
+            node = FindCommand(NULL, L"WIDTH_cmd");
+            cmdRet(RegisterParameter(node, NULL, 0, L"SHIT"));
+            cmdRet(RegisterParameter(node, myFunc2, 1, L"shit"));
+            cmdRet(RegisterParameter(node, userShowList, 0, L"list"));
 
-            cmdRet(RegisterParameter(node, NULL, 0, NULL, L"TEST1"));
-            cmdRet(RegisterParameter(node, NULL, 0, "param3", NULL));
-            cmdRet(RegisterParameter(node, NULL, 0, "param4", NULL));
-            cmdRet(RegisterParameter(node, NULL, 0, "Param4", NULL));
-            cmdRet(RegisterParameter(node, myFunc, 0, "param5", NULL));
+            cmdRet(unRegisterAllParameters(node));
 
-            cmdRet(unRegisterParameter(node, "param1", NULL));
-            cmdRet(unRegisterParameter(node, NULL, L"param1"));
-            cmdRet(unRegisterParameter(node, "param3", NULL));
+            CommandParse("test_cmd      shit    123");
+            CommandParse("  test_cmd      shit    ");
+            CommandParse("  test_cmd      shit");
+            CommandParse("   test_cmd    SHIT  ");
+            CommandParse("    test_cmd     list  ");
 
-            cmdRet(updateParameter(node, NULL, 0, "Param4", NULL, "4Param", NULL));
-            cmdRet(updateParameter(node, NULL, 0, "4Param", NULL, "param5", NULL));
-            cmdRet(updateParameter(node, NULL, 0, "Param4", NULL, NULL, NULL));
-            cmdRet(updateParameter(node, NULL, 0, NULL, NULL, "Param4", NULL));
-            cmdRet(updateParameter(node, NULL, 0, NULL, L"Param4", NULL, L"Param4"));
-
-            node = FindCommand("test6", NULL);
-            cmdRet(RegisterParameter(node, 0, NULL, "TEST1", NULL));
-
-            node = FindCommand(NULL, L"shit");
-            cmdRet(RegisterParameter(node, myFunc2, 1, NULL, L"shitParam"));
-
-            node = FindCommand("你", NULL);
-            cmdRet(RegisterParameter(node, myFunc2, 1, "MB参数", NULL));
-            cmdRet(updateParameter(node, myFunc2, 1, "MB参数", NULL, "参数MB", NULL));
-
-            cmdRet(updateCommand("test1", NULL, "test3", NULL));
-            cmdRet(updateCommand("test2", NULL, "test3", NULL));
-            cmdRet(updateCommand("test1", NULL, "test3", NULL));
-            showList();
-
-            CommandParse("test1");
-            CommandParse("test2");
-            CommandParse("test3 param5");
-            CommandParse("test3 4Param");
-            CommandParse("test3 param5 What's this?");
-            CommandParse("你 MB参数 你他MBd再说一遍？?？");
-            CommandParse("你 参数MB 你他MBd再说一遍！!！");
-
+            cmdRet(unRegisterCommand(NULL, L"width_cmd"));
 
             cmdRet(unRegisterAllCommand());
-        }
-        break;
+        }break;
         case 3:
             defaultRegCmd_init();
 
-            RegisterCommand(0, USER_CMD, NULL);
+            RegisterCommand(0, USER_CMD);
             NodeGetLastError();
 
             node = FindCommand(USER_CMD, NULL);
-            RegisterParameter(node, showList, 1, "list", NULL);
-            RegisterParameter(node, myFunc2, 1, "!?", NULL);
-            RegisterParameter(node, myFunc, 1, "??!", NULL);
-            RegisterParameter(node, exit, 1, "exit", NULL);
-            RegisterParameter(node, regCmd, 1, "cmd", NULL);
-            RegisterParameter(node, regParam, 1, "param", NULL);
-            RegisterParameter(node, delAllCmd, 1, "delAllCmd", NULL);
-            RegisterParameter(node, userShowList, 1, "ls", NULL);
+            RegisterParameter(node, showList, 1, "list");
+            RegisterParameter(node, myFunc2, 1, "!?");
+            RegisterParameter(node, myFunc, 1, "??!");
+            RegisterParameter(node, exit, 1, "exit");
+            RegisterParameter(node, regCmd, 1, "cmd");
+            RegisterParameter(node, regParam, 1, "param");
+            RegisterParameter(node, delAllCmd, 1, "delAllCmd");
+            RegisterParameter(node, userShowList, 1, "ls");
 
-            RegisterCommand(0, "USER_CMD", NULL);
-            RegisterCommand(1, NULL, L"NULL");
-            RegisterCommand(1, NULL, L"USER_CMD");
+            RegisterCommand(0, "USER_CMD");
+            RegisterCommand(1, L"NULL");
+            RegisterCommand(1, L"USER_CMD");
 
             while ( 1 )
             {
-#if 0
-                memset(userScan, 0, COMMAND_SIZE);
-                scanf_s("%s", userScan, COMMAND_SIZE);
-                printf_s("%s\n", userScan);
-                CLEAN_STDIN();
-                CommandParse(userScan);
-                NodeGetLastError();
-#endif
                 memset(userScan, 0, sizeof(userScan));
+
                 if ( fgets(userScan, COMMAND_SIZE, stdin) != NULL )
                 {
                     // 去除换行符
@@ -286,6 +260,7 @@ RETRY:
                     NodeGetLastError();
 
                 }
+                NodeGetLastError();
             }
             break;
         default:
