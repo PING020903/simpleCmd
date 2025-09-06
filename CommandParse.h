@@ -14,18 +14,18 @@
 
 #define NODE_OK 0
 #define NODE_FAIL -1
-#define NODE_ARG_ERR (NODE_OK + 1)          // 函数传递参数错误
-#define NODE_NOT_FIND (NODE_OK + 2)
-#define NODE_NOT_FIND_CMD (NODE_OK + 3)     // 未找到命令节点
-#define NODE_NOT_FIND_PARAM (NODE_OK + 4)   // 未找到参数节点
-#define NODE_ALLOC_ERR (NODE_OK + 5)        // 内存申请失败
-#define NODE_CMD_NODE_NULL (NODE_OK + 6)    // 命令节点为空
-#define NODE_PARAM_NODE_NULL (NODE_OK + 7)  // 参数节点为空
-#define NODE_REPEATING (NODE_OK + 8)        // 节点重复
-#define NODE_CMD_TOO_LONG (NODE_OK + 9)     // 输入命令过长
-#define NODE_PARAM_TOO_LONG (NODE_OK + 10)  // 命令过长
-#define NODE_PARSE_ERR (NODE_OK + 11)       // 字符串解析错误
-#define NODE_NOT_YET_INIT (NODE_OK + 12)    // 节点尚未初始化
+#define NODE_ARG_ERR (NODE_OK - 2)          // 函数传递参数错误
+#define NODE_NOT_FIND (NODE_OK - 3)
+#define NODE_NOT_FIND_CMD (NODE_OK - 4)     // 未找到命令节点
+#define NODE_NOT_FIND_PARAM (NODE_OK - 5)   // 未找到参数节点
+#define NODE_ALLOC_ERR (NODE_OK - 6)        // 内存申请失败
+#define NODE_CMD_NODE_NULL (NODE_OK - 7)    // 命令节点为空
+#define NODE_PARAM_NODE_NULL (NODE_OK - 8)  // 参数节点为空
+#define NODE_REPEATING (NODE_OK - 9)        // 节点重复
+#define NODE_CMD_TOO_LONG (NODE_OK - 10)     // 输入命令过长
+#define NODE_PARAM_TOO_LONG (NODE_OK - 11)  // 命令过长
+#define NODE_PARSE_ERR (NODE_OK - 12)       // 字符串解析错误
+#define NODE_NOT_YET_INIT (NODE_OK - 13)    // 节点尚未初始化
 
 #define MAX_COMMAND 16
 #define MAX_PARAMETER 16
@@ -148,3 +148,4 @@ int CommandParse_simple(const char* commandString, const bool isWchar);
 #endif
 
 #endif  // __COMMAND_PARSE_H__
+
