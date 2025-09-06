@@ -2027,6 +2027,28 @@ int defaultRegCmd_init (void) {
 static commandSimple_node *SimpleCommandTable = NULL;
 static int SimpleCommandTableCnt = 0;
 
+static int RegisterSimpleCheck (const void *cmdStr, const void *paramStr, const bool isWch) {
+    int loop = 0;
+    commandSimple_node *current = NULL;
+    if (!cmdStr || !paramStr)
+        return lastError = NODE_ARG_ERR;
+
+    if (SimpleCommandTable == NULL)
+        return NODE_OK;
+
+    for (loop = 0; loop < SimpleCommandTableCnt; loop++) {
+        current = &SimpleCommandTable[loop];
+        if (isWch) {
+            return lastError = NODE_ARG_ERR;
+        } else {
+            if (!strcmp (current->command_string, cmdStr) &&
+                !strcmp (current->parameter_string, paramStr))
+                return lastError = NODE_REPEATING;
+        }
+    }
+    return lastError = NODE_OK;
+}
+
 int RegisterCMD_simple (void *cmdStr, void *paramStr, const bool isWchar,
                         ParameterHandler cmdHandler, void *cmdHandlerArg, const bool isRawString) {
     commandSimple_node *p, *current;
@@ -2037,6 +2059,11 @@ int RegisterCMD_simple (void *cmdStr, void *paramStr, const bool isWchar,
         return lastError = NODE_CMD_TOO_LONG;
     if (strstr (cmdStr, " ") || strstr (paramStr, " "))
         return lastError = NODE_ARG_ERR;
+    if(RegisterSimpleCheck(cmdStr, paramStr, isWchar)!=NODE_OK)
+    {
+        DEBUG_PRINT("Command registration duplicate...");
+        return lastError;
+    }
 
 
     SimpleCommandTableCnt++;
@@ -2131,7 +2158,7 @@ int simpleCMD_freeList (void) {
     DEBUG_PRINT ("free simple command list...");
     VAR_PRINT_POS (SimpleCommandTable);
     SimpleCommandTable = NULL;
-    return NODE_OK;
+    return loop;
 }
 
 /**
@@ -2185,6 +2212,7 @@ int CommandParse_simple (const char *commandString, const bool isWchar) {
         }
 
         DEBUG_PRINT ("just had command...");
+        showCmdAndParam_simple();
         return lastError = NODE_PARSE_ERR;
     }
 #if NODE_DEBUG_SIMPLE
@@ -2273,3 +2301,4 @@ int CommandParse_simple (const char *commandString, const bool isWchar) {
     userDataPass = 0;
     return lastError = NODE_OK;
 }
+
