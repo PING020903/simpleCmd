@@ -5,6 +5,7 @@
 #include "DBG_macro.h"
 #include "CommandParse.h"
 
+#if CMD_METHOD_NODE
 
 #define NODE_DEBUG 0
 
@@ -1941,3 +1942,4 @@ int defaultRegCmd_init(void)
 }
 
 #endif
+#endif // CMD_METHOD_NODE
