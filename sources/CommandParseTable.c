@@ -4,6 +4,8 @@
 #include "DBG_macro.h"
 #include "CommandParse.h"
 
+
+#if CMD_METHOD_TABLE
 #define HASH_TABLE_DEBUG 0
 
 static cmdHash_node hashList_static[MAX_HASH_LIST] = { 0 };
@@ -219,3 +221,5 @@ int cmdTable_GetLastError(void)
     }
     return lastError;
 }
+#endif // CMD_METHOD_TABLE
+
