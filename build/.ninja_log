@@ -1,6 +1,6 @@
 # ninja log v7
-28	108	7812738050264790	CMakeFiles/outputFile.dir/sources/CommandParseTable.c.obj	deebdeec5d2ccb82
-33	145	7812738050304800	CMakeFiles/outputFile.dir/sources/cmdUserStringParser.c.obj	8f122a386617c74b
-24	151	7812738050214900	CMakeFiles/outputFile.dir/sources/CommandParseNode.c.obj	f498879d92c06a82
-36	354	7812738050334785	CMakeFiles/outputFile.dir/sources/main.c.obj	87462575127e9cdb
-355	643	7812738053523030	bin/outputFile.exe	5b7351e4bebe3f7f
+50	197	7934649981851735	CMakeFiles/outputFile.dir/sources/CommandParseTable.c.obj	b552f4f839128e9e
+57	275	7934649981921735	CMakeFiles/outputFile.dir/sources/cmdUserStringParser.c.obj	5545ccc205b03c68
+42	278	7934649981771616	CMakeFiles/outputFile.dir/sources/CommandParseNode.c.obj	27de89cbcea76e47
+65	734	7934649981991726	CMakeFiles/outputFile.dir/sources/main.c.obj	4aeaf435ebedca9a
+734	1329	7934649988689140	bin/outputFile.exe	f66d5ee79df892b0

@@ -1,0 +1,26 @@
+[
+{
+  "directory": "F:/cmake_study/simpleCmd/build",
+  "command": "C:\\PROGRA~1\\MICROS~2\\18\\COMMUN~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx86\\x86\\cl.exe  /nologo -IF:\\cmake_study\\simpleCmd\\include /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\outputFile.dir\\sources\\CommandParseNode.c.obj /FdCMakeFiles\\outputFile.dir\\ /FS -c F:\\cmake_study\\simpleCmd\\sources\\CommandParseNode.c",
+  "file": "F:/cmake_study/simpleCmd/sources/CommandParseNode.c",
+  "output": "F:/cmake_study/simpleCmd/build/CMakeFiles/outputFile.dir/sources/CommandParseNode.c.obj"
+},
+{
+  "directory": "F:/cmake_study/simpleCmd/build",
+  "command": "C:\\PROGRA~1\\MICROS~2\\18\\COMMUN~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx86\\x86\\cl.exe  /nologo -IF:\\cmake_study\\simpleCmd\\include /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\outputFile.dir\\sources\\CommandParseTable.c.obj /FdCMakeFiles\\outputFile.dir\\ /FS -c F:\\cmake_study\\simpleCmd\\sources\\CommandParseTable.c",
+  "file": "F:/cmake_study/simpleCmd/sources/CommandParseTable.c",
+  "output": "F:/cmake_study/simpleCmd/build/CMakeFiles/outputFile.dir/sources/CommandParseTable.c.obj"
+},
+{
+  "directory": "F:/cmake_study/simpleCmd/build",
+  "command": "C:\\PROGRA~1\\MICROS~2\\18\\COMMUN~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx86\\x86\\cl.exe  /nologo -IF:\\cmake_study\\simpleCmd\\include /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\outputFile.dir\\sources\\cmdUserStringParser.c.obj /FdCMakeFiles\\outputFile.dir\\ /FS -c F:\\cmake_study\\simpleCmd\\sources\\cmdUserStringParser.c",
+  "file": "F:/cmake_study/simpleCmd/sources/cmdUserStringParser.c",
+  "output": "F:/cmake_study/simpleCmd/build/CMakeFiles/outputFile.dir/sources/cmdUserStringParser.c.obj"
+},
+{
+  "directory": "F:/cmake_study/simpleCmd/build",
+  "command": "C:\\PROGRA~1\\MICROS~2\\18\\COMMUN~1\\VC\\Tools\\MSVC\\1450~1.357\\bin\\Hostx86\\x86\\cl.exe  /nologo -IF:\\cmake_study\\simpleCmd\\include /DWIN32 /D_WINDOWS /W3 /MDd /Zi /Ob0 /Od /RTC1 /FoCMakeFiles\\outputFile.dir\\sources\\main.c.obj /FdCMakeFiles\\outputFile.dir\\ /FS -c F:\\cmake_study\\simpleCmd\\sources\\main.c",
+  "file": "F:/cmake_study/simpleCmd/sources/main.c",
+  "output": "F:/cmake_study/simpleCmd/build/CMakeFiles/outputFile.dir/sources/main.c.obj"
+}
+]
