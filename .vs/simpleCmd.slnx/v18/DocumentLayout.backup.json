@@ -1,0 +1,109 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "F:\\cmake_study\\simpleCmd\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|F:\\cmake_study\\simpleCmd\\build.bat||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:build.bat||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|F:\\cmake_study\\simpleCmd\\sources\\CommandParseTable.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:sources\\CommandParseTable.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|F:\\cmake_study\\simpleCmd\\sources\\main.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:sources\\main.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|F:\\cmake_study\\simpleCmd\\sources\\CommandParseNode.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:sources\\CommandParseNode.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|F:\\cmake_study\\simpleCmd\\sources\\cmdUserStringParser.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:sources\\cmdUserStringParser.c||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "build.bat",
+              "DocumentMoniker": "F:\\cmake_study\\simpleCmd\\build.bat",
+              "RelativeDocumentMoniker": "build.bat",
+              "ToolTip": "F:\\cmake_study\\simpleCmd\\build.bat",
+              "RelativeToolTip": "build.bat",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACUAAAAiAAAAAAAAAA==",
+              "Icon": "00000000-0000-0000-0000-000000000000.000000|iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAGRSURBVDhPY6Aq\u002BP//P5Q1iAEjiGjt7KGKU6vLSxiZoGySgK21FVYaDkAu/PXrF1n458\u002BfYAzzJV4Xnjx5kmHixIlgGhuARSpy5OI0cMHixQy8ohIMXqGRDGzC4gxTZsyCykAAsmEEDbx06RKDla09g4aSPMPFY4cYdJUVGCyd3cDiIIDLMBDAauD\u002B/fsZuDk5GdatWcMQGRnJsGHtGgZ\u002BXl6wODbDkA3FaqCjoyPD9\u002B/fGYJDQhiWL1/OEBgcwvD921cGUWk5hpVb9zDsPngULA8CRLlQT0\u002BP4djhgwx3HjxiMLWxZ7hx/yHD1s2bGZg07Bnc3NwYXgupM5y9fI14F4JAXGwsw7uXzxk2rFzG8PnVcwZFZTUGdzVhhj33PzN4aogyPH39HqwOZBhRBoKAubk5Q15eHpiWEhVk2HXrLYOLIi/DjptvGIx0NDEMAwG8BsIUg2iQAYJvrjHs2rmTQYflPYOUiACKPAzgNBBZMQhzcHAwONlYMIR4OjFoqigwsLOzw\u002BWRAdULByhz5AAGBgBbcgKqCuq3vwAAAABJRU5ErkJggg==",
+              "WhenOpened": "2026-02-22T11:54:36.462Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "main.c",
+              "DocumentMoniker": "F:\\cmake_study\\simpleCmd\\sources\\main.c",
+              "RelativeDocumentMoniker": "sources\\main.c",
+              "ToolTip": "F:\\cmake_study\\simpleCmd\\sources\\main.c",
+              "RelativeToolTip": "sources\\main.c",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2026-02-22T11:54:01.983Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CommandParseTable.c",
+              "DocumentMoniker": "F:\\cmake_study\\simpleCmd\\sources\\CommandParseTable.c",
+              "RelativeDocumentMoniker": "sources\\CommandParseTable.c",
+              "ToolTip": "F:\\cmake_study\\simpleCmd\\sources\\CommandParseTable.c",
+              "RelativeToolTip": "sources\\CommandParseTable.c",
+              "ViewState": "AgIAAE4AAAAAAAAAAAAAADYAAAAnAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2026-02-22T11:53:41.971Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "CommandParseNode.c",
+              "DocumentMoniker": "F:\\cmake_study\\simpleCmd\\sources\\CommandParseNode.c",
+              "RelativeDocumentMoniker": "sources\\CommandParseNode.c",
+              "ToolTip": "F:\\cmake_study\\simpleCmd\\sources\\CommandParseNode.c",
+              "RelativeToolTip": "sources\\CommandParseNode.c",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2026-02-22T11:53:40.478Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "cmdUserStringParser.c",
+              "DocumentMoniker": "F:\\cmake_study\\simpleCmd\\sources\\cmdUserStringParser.c",
+              "RelativeDocumentMoniker": "sources\\cmdUserStringParser.c",
+              "ToolTip": "F:\\cmake_study\\simpleCmd\\sources\\cmdUserStringParser.c",
+              "RelativeToolTip": "sources\\cmdUserStringParser.c",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAABsAAAAUAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000423|",
+              "WhenOpened": "2026-02-22T11:53:34.049Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

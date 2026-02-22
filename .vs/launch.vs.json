@@ -1,0 +1,12 @@
+{
+  "version": "0.2.1",
+  "defaults": {},
+  "configurations": [
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "outputFile.exe (F:\\cmake_study\\simpleCmd\\build\\bin\\outputFile.exe)",
+      "name": "outputFile.exe (F:\\cmake_study\\simpleCmd\\build\\bin\\outputFile.exe)"
+    }
+  ]
+}
