@@ -9,6 +9,18 @@
 
 #define NODE_DEBUG 0
 
+// 包装函数，用于适配 exit 函数的签名
+static void _exit_wrapper(void* arg) {
+    (void)arg; // 未使用参数
+    exit(0);
+}
+
+// 包装函数，用于适配 cmdNode_showList 的签名
+static void cmdNode_showList_wrapper(void* arg) {
+    (void)arg; // 未使用参数
+    cmdNode_showList();
+}
+
 #define DEFAULT_CMD "reg"
 #define DEFAULT_PARAM_cmd "cmd"
 #define DEFAULT_PARAM_param "param"
@@ -335,7 +347,7 @@ void cmdNode_showParam(command_node* CmdNode)
             ? wprintf(L"<%ls>this command has no parameters...\n", CmdNode->command_string)
             : printf("<%s>this command has no parameters...\n", (char*)(CmdNode->command_string));
 #else
-        cmdstring = CmdNode->command_string;
+        cmdstring = (char*)CmdNode->command_string;
         if (CmdNode->isWch) {
             printf("this command has no parameters...\n");
             return;
@@ -354,7 +366,7 @@ void cmdNode_showParam(command_node* CmdNode)
             ? wprintf(L"        %ls\n", node->parameter_string)
             : printf("        %s\n", (char*)(node->parameter_string));
 #else
-        paramstring = node->parameter_string;
+        paramstring = (char*)node->parameter_string;
         if (CmdNode->isWch) {
             printf("    (unsupport display)\n");
             goto _nextNode;
@@ -389,7 +401,7 @@ void cmdNode_showList(void)
             ? wprintf(L"%llu:command  <%ls>(isWch)     ", cnt++, node->command_string)
             : printf("%llu:command  <%s>     ", cnt++, (char*)(node->command_string));
 #else
-        cmdstring = node->command_string;
+        cmdstring = (char*)node->command_string;
         if (node->isWch) {
             printf("%d:command(isWchar unsupport display) <>", cnt++);
             goto _nextNode;
@@ -592,7 +604,7 @@ int cmdNode_unRegisterAllParameters(command_node* node)
             ? wprintf(L"<%ls>(isWch) ParameterNode is NULL.\n", node->command_string)
             : printf("<%s> ParameterNode is NULL.\n", (char*)(node->command_string));
 #else
-        string = node->command_string;
+        string = (char*)node->command_string;
         if (node->isWch) {
             printf("<>(wchar is unsupport) ParameterNode is NULL.\n");
             return lastError = NODE_OK;
@@ -943,7 +955,7 @@ int cmdNode_unRegisterAllCommand(void)
             ? wprintf(L"<%ls>(isWch) deleted\n", CmdNode->command_string)
             : printf("<%s> deleted\n", (char*)(CmdNode->command_string));
 #else
-        string = CmdNode->command_string;
+        string = (char*)CmdNode->command_string;
         if (CmdNode->isWch) {
             printf("<wchar unsupport display> deleted\n");
         }
@@ -1742,7 +1754,7 @@ static void regParam(void* arg)
 
     if (strcmp(paramArr, "exit") == 0)
     {
-        cmdNode_RegisterParameter(cmdNode, exit, 1, paramArr);
+        cmdNode_RegisterParameter(cmdNode, _exit_wrapper, 1, paramArr);
         return;
     }
 
@@ -1936,7 +1948,7 @@ int defaultRegCmd_init(void)
     cmdNode_RegisterParameter(CmdNode, regDelCmd, false, DEFAULT_PARAM_DelCmd);
     cmdNode_RegisterParameter(CmdNode, regDelParam, false, DEFUALT_PARAM_DelParam);
     cmdNode_RegisterParameter(CmdNode, regDelAllCmd, false, DEFUALT_PARAM_DelAllCmd);
-    cmdNode_RegisterParameter(CmdNode, cmdNode_showList, false, DEFUALT_PARAM_ls);
+    cmdNode_RegisterParameter(CmdNode, cmdNode_showList_wrapper, false, DEFUALT_PARAM_ls);
 
     return 0;
 }

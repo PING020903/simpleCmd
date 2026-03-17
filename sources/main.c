@@ -28,43 +28,6 @@
 static wchar_t command_w[COMMAND_SIZE];
 static char command[COMMAND_SIZE];
 
-static int print_array(void* array, const size_t memberSize)
-{
-    void* pos = array;
-    printf_s("[%llu]", memberSize);
-    switch (memberSize)
-    {
-        case sizeof(unsigned char) :
-        {
-            while (*((unsigned char*)pos) != '\0')
-                printf_s("%u,", *((unsigned char*)pos)++);
-        }
-        break;
-        case sizeof(unsigned short) :
-        {
-            while (*((unsigned short*)pos) != '\0')
-                printf_s("%u,", *((unsigned short*)pos)++);
-        }
-        break;
-        case sizeof(unsigned int) :
-        {
-            while (*((unsigned int*)pos) != '\0')
-                printf_s("%lu,", *((unsigned int*)pos)++);
-        }
-        break;
-        case sizeof(unsigned long long) :
-        {
-            while (*((unsigned long long*)pos) != '\0')
-                printf_s("%llu,", *((unsigned long long*)pos)++);
-        }
-        break;
-
-        default:
-            break;
-    }
-    return 0;
-}
-
 
 static int cnt = 0;
 static void cmdRet(const int ret)
@@ -158,7 +121,7 @@ static void regParam(void* arg)
     cmd += 1;
     if (cmd == NULL)
         return;
-    funcAdd = strtoull(cmd, &tmp, 16);
+    funcAdd = strtoull(cmd, (char**)&tmp, 16);
     printf("parse funcAdd:<%llu><%llx>\n", funcAdd, funcAdd);
     func = (void*)funcAdd;
     cmdNode_RegisterParameter(cmdNode, func, 0, paramArr);
@@ -253,6 +216,14 @@ static unsigned int StringToDevId(const char* DevStr)
     return DevId;
 }
 
+static void _cmdNode_showList(void* arg){
+    cmdNode_showList();
+}
+
+static void _exit_func(void* arg){
+    exit(0);
+}
+
 
 
 int main(int argc, char* argv[])
@@ -325,10 +296,10 @@ _RETRY:
         cmdNode_GetLastError();
 
         node = cmdNode_FindCommand(USER_CMD, NULL);
-        cmdNode_RegisterParameter(node, cmdNode_showList, true, "list");
+        cmdNode_RegisterParameter(node, _cmdNode_showList, true, "list");
         cmdNode_RegisterParameter(node, myFunc2, true, "!?");
         cmdNode_RegisterParameter(node, myFunc, true, "??!");
-        cmdNode_RegisterParameter(node, exit, true, "exit");
+        cmdNode_RegisterParameter(node, _exit_func, true, "exit");
         cmdNode_RegisterParameter(node, regCmd, true, "cmd");
         cmdNode_RegisterParameter(node, regParam, true, "param");
         cmdNode_RegisterParameter(node, delAllCmd, true, "delAllCmd");
@@ -480,8 +451,8 @@ _RETRY:
         ret = cmdTable_RegisterCMD((void*)uCMD_4, strlen(uCMD_4),
             uPARAM_13, strlen(uPARAM_13), myFunc);
 
-        char* tempString[COMMAND_SIZE / 4] = { 0 };
-        strcpy(tempString, "test SimpleCMD 123 456 789\0");
+        char tempString[COMMAND_SIZE / 4] = { 0 };
+        strcpy(tempString, "test SimpleCMD 123 456 789");
         cmdTable_CommandParse(tempString);
 
         cmdHash_node _old = {
@@ -499,7 +470,7 @@ _RETRY:
         cmdTable_updataCMDarg(&_old, &_new);
         cmdTable_CommandParse(tempString);
 
-        strcpy(tempString, "test simplecmd 123 456 789\0");
+        strcpy(tempString, "test simplecmd 123 456 789");
         cmdTable_CommandParse(tempString);
         cmdTable_resetTable();
 
