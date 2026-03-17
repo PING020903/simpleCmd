@@ -4,6 +4,7 @@
 
 #define ENABLE_WCHAR 0
 
+#include <stdint.h>
 
 #define PARSE_SIZE 128 // 需注意, 要与缓冲区长度一致, 不然会读取到脏字符
 
