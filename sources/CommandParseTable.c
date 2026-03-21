@@ -76,8 +76,11 @@ int cmdTable_CommandParse(const char* commandString) {
     int targetIndex = CMDHASH_INVALID_INDEX;
     unsigned int cmdHash, paramHash;
     userString* userData = NULL;
-    if (commandString == NULL)
+    if (commandString == NULL){
+        ERROR_PRINT("");
         return lastError = NODE_ARG_ERR;
+    }
+        
 
     if (hashListEnd == CMDHASH_INVALID_INDEX) {
         DEBUG_PRINT("no registration command...");
@@ -86,6 +89,7 @@ int cmdTable_CommandParse(const char* commandString) {
 
     ParseSpace(commandString);
     if (userParse_GetUserParamCnt() < 2) {
+        ERROR_PRINT("2");
         lastError = NODE_ARG_ERR;
         goto _err;
     }
