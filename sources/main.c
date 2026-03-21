@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <Windows.h>
+#include "DBG_macro.h"
 
 #include "CommandParse.h"
 
@@ -308,6 +309,7 @@ _RETRY:
         cmdNode_RegisterCommand(0, "USER_CMD");
         cmdNode_RegisterCommand(1, L"NULL");
         cmdNode_RegisterCommand(1, L"USER_CMD");
+        _cmdNode_showList(NULL);
 
         while (1)
         {
@@ -322,11 +324,15 @@ _RETRY:
                 cmdNode_GetLastError();
 
             }
+            Sleep(1);
         }
     }break;
     case 4:
     {
-
+        char str[PARSE_SIZE] = {0};
+        strcpy(str, "01  22     333    4444    55555  666666    77  88888888           !9");
+        //VAR_PRINT_STRING(str);
+        //VAR_PRINT_HEX((uintptr_t)str);
     }break;
     case 5:
     {
@@ -444,16 +450,17 @@ _RETRY:
 
         ret = cmdTable_RegisterCMD(uCMD_2, strlen(uCMD_2),
             uPARAM_11, strlen(uPARAM_11), myFunc);
-
+#if 0
         ret = cmdTable_RegisterCMD(uCMD_2, strlen(uCMD_2),
             (void*)uFUNC(0), strlen(uFUNC(0)), myFunc);
-
+#endif
         ret = cmdTable_RegisterCMD((void*)uCMD_4, strlen(uCMD_4),
             uPARAM_13, strlen(uPARAM_13), myFunc);
 
         char tempString[COMMAND_SIZE / 4] = { 0 };
         strcpy(tempString, "test SimpleCMD 123 456 789");
         cmdTable_CommandParse(tempString);
+        VAR_PRINT_INT(cmdTable_GetLastError());
 
         cmdHash_node _old = {
             .command = cmdTable_CmdToHash(uCMD_2, strlen(uCMD_2)),
@@ -469,11 +476,13 @@ _RETRY:
 
         cmdTable_updataCMDarg(&_old, &_new);
         cmdTable_CommandParse(tempString);
+        VAR_PRINT_INT(cmdTable_GetLastError());
 
         strcpy(tempString, "test simplecmd 123 456 789");
         cmdTable_CommandParse(tempString);
+        VAR_PRINT_INT(cmdTable_GetLastError());
         cmdTable_resetTable();
-
+        VAR_PRINT_INT(cmdTable_GetLastError());
 
     }break;
     default:
@@ -483,4 +492,15 @@ _RETRY:
 
     system("pause");
     return 0;
+}
+
+extern void *cmd_MemoryAlloc(size_t bytes);
+extern void cmd_MemoryFree(void *mem);
+
+void* cmd_MemoryAlloc(size_t bytes){
+    return malloc(bytes);
+}
+
+void cmd_MemoryFree(void* mem){
+    return free(mem);
 }
