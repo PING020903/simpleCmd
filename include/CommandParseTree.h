@@ -54,6 +54,9 @@ typedef struct cmdTreeNode {
 #if CMDTREE_ENABLE_DATA_HANDLER
     data_handler_fn_t       dataHandler;    // NULL = 无 BLE 数据回调
 #endif
+#if CMDTREE_ENABLE_HELP
+    const char             *token;          // 原始 token 字符串指针（须为编译期字面量/持久串）
+#endif
     struct cmdTreeNode     *parent;         // 父节点（root->parent = NULL）
 
     ll_t                    sibling_node;   // 挂在 parent->children_head 链表上
@@ -79,6 +82,9 @@ typedef struct cmdTreeNode {
     handler_fn_t        handler;        // NULL = 纯路由节点
 #if CMDTREE_ENABLE_DATA_HANDLER
     data_handler_fn_t   dataHandler;    // NULL = 无 BLE 数据回调
+#endif
+#if CMDTREE_ENABLE_HELP
+    const char          *token;          // 原始 token 字符串指针（须为编译期字面量/持久串）
 #endif
     CMDTREE_STATIC_INDEX_TYPE  parent_idx;     // 父节点索引（根节点的 parent_idx = -1）
     CMDTREE_STATIC_INDEX_TYPE  first_child;    // 第一个子节点索引（-1 = 无子节点）
@@ -113,6 +119,17 @@ cmdTreeNodeRef cmdTree_Register(cmdTreeNodeRef parent,
                                 data_handler_fn_t dataHandler);
 
 /**
+ * @brief 注册内置 help 指令（应在所有其他命令注册完成后最后调用）
+ * @param parent  父节点（通常为 CMDTREE_ROOT）
+ * @return 节点引用，失败返回 CMDTREE_NULL
+ *
+ * 注意：help 显示的命令字符串来自注册时传入的 token 指针，不做拷贝。
+ * 因此仅支持编译期字面量（如 "device"）或全局持久缓冲区注册的命令，
+ * 运行时在栈上构造的临时字符串无法正确显示。
+ */
+cmdTreeNodeRef cmdTree_RegisterHelp(cmdTreeNodeRef parent);
+
+/**
  * @brief 解析命令字符串
  *
  * 逐 token 沿树下行，取最深命中 handler 节点，剩余参数透传给 handler。
@@ -131,6 +148,12 @@ cmdTree_err_t cmdTree_GetLastError(void);
 
 /** 调试：打印树结构 */
 void cmdTree_show(void);
+
+/** 帮助：显示所有注册命令及其层级关系（需启用 CMDTREE_ENABLE_HELP）
+ *
+ * 注意：仅能正确显示编译期字面量注册的命令 token，
+ * 运行时动态构造的字符串可能无法正常显示。 */
+void cmdTree_showHelp(void);
 
 /** 获取当前激活的 handler（解析后由 tree 自动设置） */
 handler_fn_t cmdTree_getActiveHandler(void);

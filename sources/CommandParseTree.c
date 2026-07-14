@@ -56,6 +56,14 @@ static cmdTreeNodeRef find_child(cmdTreeNodeRef parent, unsigned int hash)
  * 公开 API
  * ================================================================== */
 
+#if CMDTREE_ENABLE_HELP
+static void h_help(void *arg)
+{
+    (void)arg;
+    cmdTree_showHelp();
+}
+#endif
+
 void cmdTree_init(void)
 {
     memset(cmdTree_nodes, 0, sizeof(cmdTree_nodes));
@@ -112,6 +120,9 @@ cmdTreeNodeRef cmdTree_Register(cmdTreeNodeRef parent,
 #else
     (void)dataHandler;
 #endif
+#if CMDTREE_ENABLE_HELP
+    cmdTree_nodes[slot].token        = token;
+#endif
     cmdTree_nodes[slot].parent_idx   = parent;
     cmdTree_nodes[slot].first_child  = -1;
     cmdTree_nodes[slot].next_sibling = -1;
@@ -123,6 +134,16 @@ cmdTreeNodeRef cmdTree_Register(cmdTreeNodeRef parent,
 
     lastError = CMDTREE_OK;
     return slot;
+}
+
+cmdTreeNodeRef cmdTree_RegisterHelp(cmdTreeNodeRef parent)
+{
+#if CMDTREE_ENABLE_HELP
+    return cmdTree_Register(parent, "help", h_help, NULL);
+#else
+    (void)parent;
+    return CMDTREE_NULL;
+#endif
 }
 
 int cmdTree_CommandParse(const char *commandString)
@@ -173,6 +194,9 @@ int cmdTree_CommandParse(const char *commandString)
     }
 
     if (bestMatch == CMDTREE_NULL) {
+#if CMDTREE_ENABLE_HELP
+        printf("Unknown command. Type 'help' for available commands.\n");
+#endif
         lastError = CMDTREE_ERR_NOT_FOUND;
     } else {
         activeNode = bestMatch;
@@ -250,6 +274,39 @@ void cmdTree_show(void)
     show_subtree_static(0, 0);
 }
 
+/* ====== 帮助：递归显示命令层级 ====== */
+#if CMDTREE_ENABLE_HELP
+static void showHelp_subtree_static(cmdTreeNodeRef node, int depth)
+{
+    for (cmdTreeNodeRef c = cmdTree_nodes[node].first_child;
+         c != CMDTREE_NULL;
+         c = cmdTree_nodes[c].next_sibling) {
+        for (int i = 0; i < depth; i++)
+            printf("  ");
+        printf("%s", cmdTree_nodes[c].token ? cmdTree_nodes[c].token : "(null)");
+        if (cmdTree_nodes[c].handler)
+            printf("  <- [cmd]");
+        printf("\n");
+
+        showHelp_subtree_static(c, depth + 1);
+    }
+}
+#endif
+
+void cmdTree_showHelp(void)
+{
+#if CMDTREE_ENABLE_HELP
+    if (cmdTree_nodes[0].used == 0) {
+        printf("(tree not initialized)\n");
+        return;
+    }
+    printf("Available commands:\n");
+    showHelp_subtree_static(0, 0);
+#else
+    printf("help is disabled (CMDTREE_ENABLE_HELP=0)\n");
+#endif
+}
+
 #endif /* CMDTREE_MODE_STATIC */
 
 /* ============================================================
@@ -296,6 +353,14 @@ static void free_subtree(cmdTreeNode_t *node)
 /* ==================================================================
  * 公开 API
  * ================================================================== */
+
+#if CMDTREE_ENABLE_HELP
+static void h_help(void *arg)
+{
+    (void)arg;
+    cmdTree_showHelp();
+}
+#endif
 
 void cmdTree_init(void)
 {
@@ -346,6 +411,9 @@ cmdTreeNodeRef cmdTree_Register(cmdTreeNodeRef parent,
 #else
     (void)dataHandler;
 #endif
+#if CMDTREE_ENABLE_HELP
+    n->token       = token;
+#endif
     n->parent      = parent;
     n->children_head = (ll_t)ll_head_INIT(n->children_head);
 
@@ -353,6 +421,16 @@ cmdTreeNodeRef cmdTree_Register(cmdTreeNodeRef parent,
 
     lastError = CMDTREE_OK;
     return n;
+}
+
+cmdTreeNodeRef cmdTree_RegisterHelp(cmdTreeNodeRef parent)
+{
+#if CMDTREE_ENABLE_HELP
+    return cmdTree_Register(parent, "help", h_help, NULL);
+#else
+    (void)parent;
+    return CMDTREE_NULL;
+#endif
 }
 
 int cmdTree_CommandParse(const char *commandString)
@@ -399,6 +477,9 @@ int cmdTree_CommandParse(const char *commandString)
     }
 
     if (bestMatch == NULL) {
+#if CMDTREE_ENABLE_HELP
+        printf("Unknown command. Type 'help' for available commands.\n");
+#endif
         lastError = CMDTREE_ERR_NOT_FOUND;
     } else {
         activeNode = bestMatch;
@@ -476,6 +557,38 @@ void cmdTree_show(void)
     }
     printf("cmdTree (dynamic):\n");
     show_subtree(cmdTree_root, 0);
+}
+
+/* ====== 帮助：递归显示命令层级 ====== */
+#if CMDTREE_ENABLE_HELP
+static void showHelp_subtree(const cmdTreeNode_t *node, int depth)
+{
+    cmdTreeNode_t *child;
+    list_for_each_entry(child, &node->children_head, sibling_node) {
+        for (int i = 0; i < depth; i++)
+            printf("  ");
+        printf("%s", child->token ? child->token : "(null)");
+        if (child->handler)
+            printf("  <- [cmd]");
+        printf("\n");
+
+        showHelp_subtree(child, depth + 1);
+    }
+}
+#endif
+
+void cmdTree_showHelp(void)
+{
+#if CMDTREE_ENABLE_HELP
+    if (!cmdTree_root) {
+        printf("(tree not initialized)\n");
+        return;
+    }
+    printf("Available commands:\n");
+    showHelp_subtree(cmdTree_root, 0);
+#else
+    printf("help is disabled (CMDTREE_ENABLE_HELP=0)\n");
+#endif
 }
 
 #endif /* CMDTREE_MODE_DYNAMIC */

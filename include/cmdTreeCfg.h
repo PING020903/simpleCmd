@@ -36,6 +36,13 @@ typedef char CMDTREE_assert_idx_signed[(CMDTREE_STATIC_INDEX_TYPE)(-1) < (CMDTRE
 /* ====== BLE 数据回调 ====== */
 #define CMDTREE_ENABLE_DATA_HANDLER  1   // 1=启用 dataHandler（BLE 数据回调），0=禁用（节省节点内存）
 
+/* ====== 内置 help 指令 ====== */
+#define CMDTREE_ENABLE_HELP  1   // 1=启用内置 "help" 指令，0=禁用（节省节点内存）
+// 注意：token 字符串直接存 const char* 指针，不做拷贝。
+// 这意味着 help 指令只能正确显示用编译期字面量（如 "device"）注册的命令，
+// 运行时在栈上构造的临时字符串（如 snprintf 拼出的 buffer）无法通过 help 显示。
+// 调用方传入 cmdTree_Register 的 token 必须是编译期字面量或全局持久字符串。
+
 /* ====== 输入缓冲区大小 ====== */
 #define PARSE_SIZE  128   // 单次解析的输入最大字符数
 
