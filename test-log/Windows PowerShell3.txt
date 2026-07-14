@@ -1,0 +1,124 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\12566> F:
+PS F:\> cd .\cmake_study\simpleCmd\build\bin\
+PS F:\cmake_study\simpleCmd\build\bin> .\outputFile.exe
+cmdTree Demo
+  1 — basic two-level routing (device/reset, device/ota)
+  2 — multi-level routing + BLE dataHandler
+  3 — interactive REPL
+  4 — quoted params demo
+> 3
+=== cmdTree REPL ===
+Commands: device [reset|ota] | test [hardware|flash]
+          wait dat [names|font] | list | exit | help
+Quoted raw: device "hello world"
+====================
+
+> helppp
+Unknown command. Type 'help' for available commands.
+> ”help“
+Unknown command. Type 'help' for available commands.
+> "help
+Available commands:
+device  <- [cmd]
+  reset  <- [cmd]
+  ota  <- [cmd]
+test  <- [cmd]
+  hardware  <- [cmd]
+  flash  <- [cmd]
+wait
+  dat
+    names  <- [cmd]
+    font  <- [cmd]
+list  <- [cmd]
+exit  <- [cmd]
+help  <- [cmd]
+> exit
+bye.
+PS F:\cmake_study\simpleCmd\build\bin> .\outputFile.exe
+cmdTree Demo
+  1 — basic two-level routing (device/reset, device/ota)
+  2 — multi-level routing + BLE dataHandler
+  3 — interactive REPL
+  4 — quoted params demo
+> 3
+=== cmdTree REPL ===
+Commands: device [reset|ota] | test [hardware|flash]
+          wait dat [names|font] | list | exit | help
+Quoted raw: device "hello world"
+====================
+
+> help
+Available commands:
+device  <- [cmd]
+  reset  <- [cmd]
+  ota  <- [cmd]
+test  <- [cmd]
+  hardware  <- [cmd]
+  flash  <- [cmd]
+wait
+  dat
+    names  <- [cmd]
+    font  <- [cmd]
+list  <- [cmd]
+exit  <- [cmd]
+help  <- [cmd]
+> exit
+bye.
+PS F:\cmake_study\simpleCmd\build\bin> cd ..
+PS F:\cmake_study\simpleCmd\build> cd ..
+PS F:\cmake_study\simpleCmd> cmake --build build
+[11/11] Linking C executable bin\outputFile.exe
+PS F:\cmake_study\simpleCmd> cd .\build\bin\
+PS F:\cmake_study\simpleCmd\build\bin> .\outputFile.exe
+cmdTree Demo
+  1 — basic two-level routing (device/reset, device/ota)
+  2 — multi-level routing + BLE dataHandler
+  3 — interactive REPL
+  4 — quoted params demo
+> 3
+=== cmdTree REPL ===
+Commands: device [reset|ota] | test [hardware|flash]
+          wait dat [names|font] | list | exit | help
+Quoted raw: device "hello world"
+====================
+
+> hellp
+Unknown command. Type 'help' for available commands.
+> "help
+Available commands:
+help  <- [cmd]
+exit  <- [cmd]
+list  <- [cmd]
+wait
+  dat
+    font  <- [cmd]
+    names  <- [cmd]
+test  <- [cmd]
+  flash  <- [cmd]
+  hardware  <- [cmd]
+device  <- [cmd]
+  ota  <- [cmd]
+  reset  <- [cmd]
+> help
+Available commands:
+help  <- [cmd]
+exit  <- [cmd]
+list  <- [cmd]
+wait
+  dat
+    font  <- [cmd]
+    names  <- [cmd]
+test  <- [cmd]
+  flash  <- [cmd]
+  hardware  <- [cmd]
+device  <- [cmd]
+  ota  <- [cmd]
+  reset  <- [cmd]
+> exit
+bye.
+PS F:\cmake_study\simpleCmd\build\bin>

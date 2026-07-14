@@ -71,6 +71,7 @@
 | `CMDTREE_STATIC_INDEX_TYPE` | `short` | 静态模式索引类型（须有符号：`int8_t` / `short` / `int`） |
 | `CMDTREE_ENABLE_DATA_HANDLER` | 1 | BLE 数据回调开关（0=禁用，节省节点内存） |
 | `ENABLE_WCHAR` | 1 | 宽字符分词 `ParseSpaceW` |
+| `CMDTREE_ENABLE_HELP` | 1 | 内置 "help" 指令（显示所有注册命令及层级关系），0=禁用（节省节点内存）<br>**注意**：token 直接存 `const char*` 指针不做拷贝，仅支持编译期字面量注册的命令，运行时动态构造的字符串无法通过 `help` 正确显示 |
 | `PARSE_SIZE` | 128 | 输入缓冲区大小 |
 
 ---
@@ -136,6 +137,16 @@ typedef /* ... */ cmdTreeNodeRef;
 #### `void cmdTree_reset(void)`
 
 释放/清空所有节点。动态模式递归 free，静态模式清零数组。
+
+#### `cmdTreeNodeRef cmdTree_RegisterHelp(cmdTreeNodeRef parent)`
+
+注册内置 `help` 指令。应在所有其他命令注册完成后最后调用。
+
+> **限制**：`help` 显示的命令字符串来自注册时传入的 `token` 指针，不做拷贝。仅支持编译期字面量（如 `"device"`）或全局持久缓冲区。运行时在栈上构造的临时字符串无法正确显示（指针失效或内容被覆盖）。
+
+#### `void cmdTree_showHelp(void)`
+
+显示所有已注册命令及其层级关系（需启用 `CMDTREE_ENABLE_HELP`）。遍历树结构，通过节点中存储的 `token` 指针打印命令字符串。带有 handler 的节点标注 `<- [cmd]`。
 
 #### `cmdTree_err_t cmdTree_GetLastError(void)`
 

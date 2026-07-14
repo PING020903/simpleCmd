@@ -193,10 +193,11 @@ static void demo_repl(void)
 
     cmdTree_Register(CMDTREE_ROOT, "list", h_showTree, NULL);
     cmdTree_Register(CMDTREE_ROOT, "exit", h_exit,    NULL);
+    cmdTree_RegisterHelp(CMDTREE_ROOT);
 
     printf("=== cmdTree REPL ===\n");
     printf("Commands: device [reset|ota] | test [hardware|flash]\n");
-    printf("          wait dat [names|font] | list | exit\n");
+    printf("          wait dat [names|font] | list | exit | help\n");
     printf("Quoted raw: device \"hello world\"\n");
     printf("====================\n\n");
 
@@ -207,8 +208,7 @@ static void demo_repl(void)
         if (input[0] == '\0') continue;
 
         int ret = cmdTree_CommandParse(input);
-        if (ret == CMDTREE_ERR_NOT_FOUND)
-            printf("  unknown command: '%s'\n", input);
+        (void)ret;
     }
 
     cmdTree_reset();
