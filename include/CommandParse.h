@@ -3,9 +3,10 @@
 #define __COMMAND_PARSE_H__
 
 #define CMD_METHOD_NODE 1
-#define CMD_METHOD_TABLE 1
+#define CMD_METHOD_TABLE 0
 
 #include <stdbool.h>
+#include "ll.h"
 #include "cmdUserStringParse.h"
 
 #define ENABLE_REG 1
@@ -13,22 +14,24 @@
 
 
 
-#define NODE_OK 0
-#define NODE_FAIL -1
-#define NODE_ARG_ERR (NODE_OK - 2)          // 函数传递参数错误
-#define NODE_NOT_FIND (NODE_OK - 3)
-#define NODE_NOT_FIND_CMD (NODE_OK - 4)     // 未找到命令节点
-#define NODE_NOT_FIND_PARAM (NODE_OK - 5)   // 未找到参数节点
-#define NODE_ALLOC_ERR (NODE_OK - 6)        // 内存申请失败
-#define NODE_CMD_NODE_NULL (NODE_OK - 7)    // 命令节点为空
-#define NODE_PARAM_NODE_NULL (NODE_OK - 8)  // 参数节点为空
-#define NODE_REPEATING (NODE_OK - 9)        // 节点重复
-#define NODE_CMD_TOO_LONG (NODE_OK - 10)    // 输入命令过长
-#define NODE_PARAM_TOO_LONG (NODE_OK - 11)  // 命令过长
-#define NODE_PARSE_ERR (NODE_OK - 12)       // 字符串解析错误
-#define NODE_NOT_YET_INIT (NODE_OK - 13)    // 节点尚未初始化
-#define NODE_UNSUPPORT (NODE_OK -14)        // 暂不支持该操作
-#define NODE_NO_HANDLER (NODE_OK - 15)
+typedef enum {
+    CMD_NODE_OK = 0,
+    CMD_NODE_ERR_FAIL = -1,
+    CMD_NODE_ERR_ARG = -2,
+    CMD_NODE_ERR_NOT_FIND = -3,
+    CMD_NODE_ERR_NOT_FINDCMD = -4,
+    CMD_NODE_ERR_NOT_FINDPARAM = -5,
+    CMD_NODE_ERR_MEM = -6,
+    CMD_NODE_ERR_NULLNODE = -7,
+    CMD_NODE_ERR_NULLPARAM = -8,
+    CMD_NODE_ERR_REPEATING = -9,
+    CMD_NODE_ERR_TOOLONG = -10,
+    CMD_NODE_ERR_PARAM_TOOLONG = -11,
+    CMD_NODE_ERR_PARSE = -12,
+    CMD_NODE_ERR_NOTINIT = -13,
+    CMD_NODE_ERR_UNSUPPORT = -14,
+    CMD_NODE_ERR_NOHANDLER = -15,
+} cmd_err_t;
 
 #define CMDHASH_INVALID_INDEX -1
 
@@ -47,32 +50,35 @@
 #endif
 
 
-typedef void(*ParameterHandler)(void* arg);// 命令参数处理
+typedef void (*handler_fn_t)(void *arg); // 命令参数处理
+typedef struct {
+    const handler_fn_t *handlers; // 函数表
+    const size_t *handlerCnt;     // 函数表长度
+    size_t handlerIdx;           // 当前处理函数索引
+} ParameterHandlers; // 数据处理方式表
 
 #if CMD_METHOD_NODE
-typedef struct {
-    void* prev;// 上一节点
-    void* next;// 下一节点
-    bool isWch : 1; // 该命令是否使用宽字符
+typedef struct command_node {
+    ll_t node;           // 第三方链表节点
+    bool isWch : 1;      // 该命令是否使用宽字符
     wchar_t command_string[MAX_COMMAND];// 命令字符串
-    void* ParameterNode_head;// 该命令下的参数
-}command_node;// 命令节点
+    ll_t param_head;     // 该命令下的参数链表头
+}command_node_t;// 命令节点
 
 
 // 参数的字符继承命令是否使用宽字符
-typedef struct {
-    void* prev;// 上一节点
-    void* next;// 下一节点
-    bool isRawStr : 1;// 传递参数的形式是否为原字符串
+typedef struct param_node {
+    ll_t node;           // 第三方链表节点
+    bool isRawStr : 1;   // 传递参数的形式是否为原字符串
     wchar_t parameter_string[MAX_PARAMETER];// 参数字符串
-    void* handlerArg;// handler 的参数
-    ParameterHandler handler;// 参数处理
-}parameter_node;// 参数节点
+    void* handlerArg;    // handler 的参数
+    handler_fn_t handler;// 参数处理
+}parameter_node_t;// 参数节点
 
 typedef struct {
     void* command;// 命令名称
     void* node;// 节点地址
-}command_info;// 命令节点信息
+}command_info_t;// 命令节点信息
 #endif
 
 #if CMD_METHOD_TABLE
@@ -80,8 +86,8 @@ typedef struct {
     void* next;
     unsigned int command;
     unsigned int parameter;
-    ParameterHandler handler;
-} cmdHash_node;
+    handler_fn_t handler;
+} cmdHash_node_t;
 #endif
 
 /**
@@ -92,16 +98,16 @@ typedef struct {
 
 
 #if CMD_METHOD_NODE
-void cmdNode_showParam(command_node* CmdNode);
+void cmdNode_showParam(command_node_t* CmdNode);
 
 void cmdNode_showList(void);
 
-command_node* cmdNode_FindCommand(const char* command, const wchar_t* commandW);
+command_node_t* cmdNode_FindCommand(const char* command, const wchar_t* commandW);
 
 int cmdNode_RegisterCommand(const bool isWch, const void* cmdStr);
 
 
-int cmdNode_unRegisterAllParameters(command_node* node);
+int cmdNode_unRegisterAllParameters(command_node_t* node);
 
 int cmdNode_unRegisterCommand(const char* command, const wchar_t* commandW);
 
@@ -110,15 +116,15 @@ int cmdNode_updateCommand(char* oldCommand, wchar_t* oldCommandW,
 
 int cmdNode_unRegisterAllCommand(void);
 
-int cmdNode_RegisterParameter(command_node* node,
-    ParameterHandler hook,
+int cmdNode_RegisterParameter(command_node_t* node,
+    handler_fn_t hook,
     const bool isRaw,
     const void* paramStr);
 
-int cmdNode_unRegisterParameter(command_node* node,
+int cmdNode_unRegisterParameter(command_node_t* node,
     const void* paramStr);
 
-int cmdNode_updateParameter(const command_node* CmdNode, ParameterHandler hook,
+int cmdNode_updateParameter(const command_node_t* CmdNode, handler_fn_t hook,
     const bool isRaw, const void* oldParam, const void* newParam);
 
 int cmdNode_CommandParse(const char* commandString);
@@ -132,11 +138,11 @@ int cmdNode_CommandParseW(const wchar_t* commandString);
 #endif // WCHAR_MIN
 #endif
 
-int cmdNode_GetLastError(void);
+cmd_err_t cmdNode_GetLastError(void);
 
 #if ENABLE_REG
 
-int NodeGetCommandMap(command_info** map);
+int NodeGetCommandMap(command_info_t** map);
 
 int defaultRegCmd_init(void);
 #endif // ENABLE_REG
@@ -147,15 +153,15 @@ int defaultRegCmd_init(void);
 unsigned int cmdTable_CmdToHash(const char* string, int len);
 
 int cmdTable_RegisterCMD(void* cmd, int cmd_len,
-    void* param, int param_len, ParameterHandler handler);
+    void* param, int param_len, handler_fn_t handler);
 
 int cmdTable_CommandParse(const char* commandString);
 
-int cmdTable_updataCMDarg(cmdHash_node* _old, cmdHash_node* _new);
+int cmdTable_updataCMDarg(cmdHash_node_t* _old, cmdHash_node_t* _new);
 
 int cmdTable_resetTable(void);
 
-int cmdTable_GetLastError(void);
+cmd_err_t cmdTable_GetLastError(void);
 #endif
 
 #endif  // __COMMAND_PARSE_H__

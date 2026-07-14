@@ -23,8 +23,8 @@ if exist "%CACHE_FILE%" (
     )
 )
 
-echo [INFO] Configuring project ^(Ninja, Debug^)...
-cmake -B "%BUILD_DIR%" -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+echo [INFO] Configuring project ^(Ninja, Debug, LLVM-MinGW^)...
+cmake -B "%BUILD_DIR%" -G "Ninja" -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE="%CD%\toolchain-llvm-mingw.cmake" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] CMake configuration failed.
     echo        - Check CMakeLists.txt syntax

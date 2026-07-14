@@ -1,13 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <wchar.h>
-#include "DBG_macro.h"
 #include "cmdUserStringParse.h"
-
-// 做外部实现的内存申请&释放的函数接口声明, 可以让用户自行实现内存该如何申请&释放
-extern void *cmd_MemoryAlloc(size_t bytes);
-extern void cmd_MemoryFree(void *mem);
 
 /**
  * @brief 用户的字符串
@@ -18,8 +10,6 @@ static userString *userData = NULL;
  * @brief 用户参数的数量
  */
 static int userDataCnt = 0;
-
-static size_t characters_remaining = 0U;
 
 void RESET_USERDATA_RECORD(void)
 {
@@ -41,163 +31,105 @@ userString *userParse_pUserData(void)
     return userData;
 }
 
-/**
- * @brief 可解析的字符( 参数用 )
- * @param ch 当前地址的字符
- * @return OK: 0,  ERROR: 1
- */
-static inline int passableChParam(const char ch)
-{
-    static const char NoSupportChar = ' ';
-    return (ch > NoSupportChar)
-               ? 0
-               : 1;
-}
-
-#if 0
-/**
- * @brief 解析空格中混含的用户参数
- * @param userParam 用户参数
- * @return 保存用户参数的首地址
- */
-void* ParseSpace(const char* userParam)
-{
-    const char space = ' ';
-    size_t passLen = 0; // 已经处理的长度
-    const size_t passConstant = PARSE_SIZE - userDataPass;
-    userString* tmp = NULL;
-    const char* str = userParam, * str2 = NULL;
-    if (userParam == NULL)
-        return NULL;
-
-    passLen = passConstant;
-    do
-    {
-        // 在指令支持的最大长度内跳过所空格, 先检查是否还有有效字符
-        for (; passableChParam(*str) && str < userParam + passConstant; str++);
-        if (str >= userParam + passConstant)
-        {
-#if NODE_DEBUG
-            printf("--<%s>%d--too far:%lld, strAdd:%p, tooFarAdd:%p\n",
-                __func__, __LINE__, userParam + passConstant - str, str, userParam + passConstant);
-#endif
-            return userData; // 超出可解析的长度
-        }
-
-        userDataCnt++;
-        passLen += str - userParam;
-        userData = (userString*)realloc(tmp, userDataCnt * sizeof(userString));
-#if 0
-        if (userData == tmp)
-        {
-            free(userData);
-            return userData = NULL;
-        }
-#endif // 此处有个拿捏不定的 bug, 若 userDataCnt 在结束一次 CommandParse 后没有置0的情况下,
-       // 会导致 realloc 失败, 但返回的是原先的地址
-        if (userData == NULL)
-        {
-            ERROR_PRINT("<%s>alloc memory fail", __func__);
-            free(tmp);
-            return (void*)userData;
-        }
-
-        (userData + userDataCnt - 1)->strHead = (void*)str;// 字符串头
-
-        str2 = str;
-        for (; *str2 != space &&
-            str2 < userParam + passConstant &&
-            *str2 != '\0'; str2++); // 略过非空格
-        if (str2 > (passConstant + userParam))
-        {
-            // 超出了限定的长度
-            DEBUG_PRINT("<%s>userParam is too long( %u, %p )...\
- the end string has no end\n",
-                __func__, PARSE_SIZE,
-                (void*)(str2 - (passConstant + userParam)));
-            (userData + userDataCnt - 1)->len =
-                (size_t)((passConstant + userParam) - str);
-            return (void*)userData;
-        }
-
-        (userData + userDataCnt - 1)->len = (size_t)(str2 - str);
-        str += (userData + userDataCnt - 1)->len;
-
-        tmp = userData;
-#if NODE_DEBUG
-        printf("<%s>len:%llu, |%s|\n", __func__,
-            (userData + userDataCnt - 1)->len, (char*)((userData + userDataCnt - 1)->strHead));
-#endif
-    } while (str <= userParam + passConstant || *str2 == '\0');
-    return (void*)userData;
-}
-#endif
-static const char *jumpSpace(const char *uStr, size_t *len)
-{
-    if (!uStr || !len || *len == 0U || *uStr == '\0')
-        return NULL;
-
-    while (passableChParam(*uStr) && uStr < uStr + *len)
-    {
-        uStr++;
-        (*len)--;
-    }
-    return uStr;
-}
-
-static const char *juemNotSpace(const char *uStr, size_t *len)
-{
-    if (!uStr || !len || *len == 0U || *uStr == '\0')
-        return NULL;
-
-    while (!passableChParam(*uStr) && uStr < uStr + *len)
-    {
-        uStr++;
-        (*len)--;
-    }
-    return uStr;
-}
-
 #define DEBUG_PARSE_SPACE_CNT 0
-// 该函数的table为非安全实现, 表的大小需等于大于参数个数
+
+/**
+ * @brief 扫描下一个 token，支持双引号括起的 raw 数据
+ *
+ * 规则：
+ *   - 跳过前导空格
+ *   - 遇到 " 进入引号模式：" 内空格保留，到下一个 "（或行尾）结束
+ *   - 普通模式：空格或 " 作为 token 边界
+ *   - 未闭合引号：从 " 到行尾作为一个 token
+ *
+ * @param str       [in/out] 当前扫描位置，调用后指向 token 之后的第一个字符
+ * @param remaining [in/out] 剩余字符数
+ * @param outHead   [out] token 内容起始地址（跳过前导引号）
+ * @param outLen    [out] token 内容长度（不含引号）
+ * @return 1=成功提取 token, 0=无更多 token
+ */
+static int scanNextToken(const char **str, size_t *remaining,
+                         const char **outHead, size_t *outLen)
+{
+    const char *s = *str;
+    size_t rem = *remaining;
+
+    /* 跳过前导空格 */
+    while (rem > 0 && *s == ' ') {
+        s++;
+        rem--;
+    }
+    if (rem == 0 || *s == '\0') {
+        return 0;
+    }
+
+    if (*s == '"') {
+        /* 引号模式：跳过开引号，内容直到闭引号或行尾 */
+        s++; rem--;
+        *outHead = s;
+
+        const char *end = s;
+        size_t endRem = rem;
+        while (endRem > 0 && *end != '"' && *end != '\0') {
+            end++;
+            endRem--;
+        }
+        *outLen = (size_t)(end - s);
+
+        if (endRem > 0 && *end == '"') {
+            end++; endRem--;   /* 跳过闭引号 */
+        }
+        /* 未闭合引号：end 已指向 '\0'，token 内容到行尾 */
+
+        *str = end;
+        *remaining = endRem;
+    } else {
+        /* 普通模式：扫描到空格、引号或行尾 */
+        *outHead = s;
+
+        const char *end = s;
+        size_t endRem = rem;
+        while (endRem > 0 && *end != ' ' && *end != '"' && *end != '\0') {
+            end++;
+            endRem--;
+        }
+        *outLen = (size_t)(end - s);
+
+        *str = end;
+        *remaining = endRem;
+    }
+
+    return 1;
+}
+
+/**
+ * @brief 分词计数 + 填表（两趟复用同一逻辑）
+ * @param userParam 输入字符串
+ * @param remaining 字符串有效长度
+ * @param table     输出表；NULL 表示仅计数不填表
+ * @return token 数量
+ */
 static size_t ParseSpaceCnt(const char *userParam, size_t remaining, userString *table)
 {
-    const char *str = userParam, *str2 = NULL;
-    size_t paramCnt = 0U, paramSize = 0U;
+    const char *str = userParam;
+    size_t rem = remaining;
+    size_t paramCnt = 0U;
     int tabIdx = 0;
 
-    do
-    {
-        str = jumpSpace(str, &remaining);
-        if (!str)
+    while (1) {
+        const char *head = NULL;
+        size_t len = 0;
+
+        if (!scanNextToken(&str, &rem, &head, &len))
             break;
-#if DEBUG_PARSE_SPACE_CNT
-        VAR_PRINT_HEX((uintptr_t)str);
-        VAR_PRINT_STRING(str);
-#endif
+
         paramCnt++;
-        if (table)
-            table[tabIdx].strHead = (void*)str;
-#if DEBUG_PARSE_SPACE_CNT
-        DEBUG_PRINT("");
-#endif
-        str2 = juemNotSpace(str, &remaining);
-        if (!str2)
-            break;
-        paramSize = str2 - str;
-        if (table)
-            table[tabIdx].len = paramSize;
-#if DEBUG_PARSE_SPACE_CNT
-        VAR_PRINT_UD(paramSize);
-#endif
-        str = str2;
+        if (table) {
+            table[tabIdx].strHead = (void *)head;
+            table[tabIdx].len = len;
+        }
         tabIdx++;
-#if DEBUG_PARSE_SPACE_CNT
-        VAR_PRINT_HEX((uintptr_t)str);
-        VAR_PRINT_STRING(str);
-        printf("\n");
-#endif
-    } while (1);
+    }
 
     return paramCnt;
 }
@@ -224,100 +156,115 @@ _end:
 }
 
 #if ENABLE_WCHAR
-#ifdef WCHAR_MIN
-#ifdef WCHAR_MAX
 
 /**
- * @brief 可解析的字符( 参数用, 宽字符 )
- * @param ch 当前地址的字符
- * @return OK: 0,  ERROR: 1
+ * @brief 扫描下一个宽字符 token，支持双引号括起的 raw 数据
+ *
+ * 与 scanNextToken 逻辑完全一致，仅类型从 char 换为 wchar_t。
  */
-static inline int passableChParamW(const wchar_t ch)
+static int scanNextTokenW(const wchar_t **str, size_t *remaining,
+                          const wchar_t **outHead, size_t *outLen)
 {
-    const wchar_t NoSupportChar = L' ';
-    return (ch > NoSupportChar)
-               ? 0
-               : 1;
+    const wchar_t *s = *str;
+    size_t rem = *remaining;
+
+    /* 跳过前导空格 */
+    while (rem > 0 && *s == L' ') {
+        s++;
+        rem--;
+    }
+    if (rem == 0 || *s == L'\0') {
+        return 0;
+    }
+
+    if (*s == L'"') {
+        /* 引号模式：跳过开引号，内容直到闭引号或行尾 */
+        s++; rem--;
+        *outHead = s;
+
+        const wchar_t *end = s;
+        size_t endRem = rem;
+        while (endRem > 0 && *end != L'"' && *end != L'\0') {
+            end++;
+            endRem--;
+        }
+        *outLen = (size_t)(end - s);
+
+        if (endRem > 0 && *end == L'"') {
+            end++; endRem--;
+        }
+
+        *str = end;
+        *remaining = endRem;
+    } else {
+        /* 普通模式：扫描到空格、引号或行尾 */
+        *outHead = s;
+
+        const wchar_t *end = s;
+        size_t endRem = rem;
+        while (endRem > 0 && *end != L' ' && *end != L'"' && *end != L'\0') {
+            end++;
+            endRem--;
+        }
+        *outLen = (size_t)(end - s);
+
+        *str = end;
+        *remaining = endRem;
+    }
+
+    return 1;
 }
 
 /**
- * @brief 解析空格中混含的用户参数( 宽字符 )
- * @param userParam 用户参数
- * @return 保存用户参数的首地址
+ * @brief 宽字符分词计数 + 填表
+ */
+static size_t ParseSpaceCntW(const wchar_t *userParam, size_t remaining, userString *table)
+{
+    const wchar_t *str = userParam;
+    size_t rem = remaining;
+    size_t paramCnt = 0U;
+    int tabIdx = 0;
+
+    while (1) {
+        const wchar_t *head = NULL;
+        size_t len = 0;
+
+        if (!scanNextTokenW(&str, &rem, &head, &len))
+            break;
+
+        paramCnt++;
+        if (table) {
+            table[tabIdx].strHead = (void *)head;
+            table[tabIdx].len = len;
+        }
+        tabIdx++;
+    }
+
+    return paramCnt;
+}
+
+/**
+ * @brief 宽字符版 ParseSpace，支持双引号 raw 数据
  */
 void *ParseSpaceW(const wchar_t *userParam)
 {
-    const wchar_t space = L' ';
-    size_t passLen = 0; // 已经处理的长度
-    const size_t passConstant = (PARSE_SIZE * 2U) - (MAX_COMMAND * 2U) -
-                                (MAX_PARAMETER * 2U) - userDataPass;
-    userString *tmp = NULL;
-    const wchar_t *str = userParam, *str2 = NULL;
-    if (userParam == NULL)
+    if (!userParam || userData)
         return NULL;
 
-    passLen = passConstant;
-    do
-    {
-        // 在指令支持的最大长度内跳过所空格, 先检查是否还有有效字符
-        for (; passableChParamW(*str) && str < userParam + passConstant; str++)
-            ;
-        if (str >= userParam + passConstant)
-        {
-#if NODE_DEBUG
-            printf("--<%s>%d--too far:%lld, strAdd:%p, tooFarAdd:%p\n",
-                   __func__, __LINE__, userParam + passConstant - str, str, userParam + passConstant);
-#endif
-            return userData; // 超出可解析的长度
-        }
+    /* PARSE_SIZE 为字符数，宽字符同样适用 */
+    userDataCnt = ParseSpaceCntW(userParam, PARSE_SIZE, NULL);
+    userData = cmd_MemoryAlloc(sizeof(*userData) * userDataCnt);
+    if (!userData)
+        goto _end;
 
-        userDataCnt++;
-        passLen += str - userParam;
-        userData = (userString *)realloc(tmp, userDataCnt * sizeof(userString));
-#if 0
-        if (userData == tmp)
-        {
-            free(userData);
-            return userData = NULL;
-        }
-#endif // 被注释的原因同上面一样
-        if (userData == NULL)
-        {
-            printf("<%s>alloc memory fail\n", __func__);
-            free(tmp);
-            return (void *)userData;
-        }
+    if (ParseSpaceCntW(userParam, PARSE_SIZE, userData) != userDataCnt) {
+        cmd_MemoryFree(userData);
+        RESET_USERDATA_RECORD();
+        goto _end;
+    }
 
-        (userData + userDataCnt - 1)->strHead = (void *)str; // 字符串头
-
-        str2 = str;
-        for (; *str2 != space &&
-               str2 < userParam + passConstant &&
-               *str2 != L'\0';
-             str2++)
-            ; // 略过非空格
-        if (str2 > (passConstant + userParam))
-        {
-            // 超出了限定的长度
-            printf("<%s>userParam is too long( %u, %p )...\
- the end string has no end\n",
-                   __func__, PARSE_SIZE,
-                   (void *)(str2 - (passConstant + userParam)));
-            (userData + userDataCnt - 1)->len =
-                (size_t)((passConstant + userParam) - str);
-            return (void *)userData;
-        }
-
-        (userData + userDataCnt - 1)->len = (size_t)(str2 - str);
-        str += (userData + userDataCnt - 1)->len;
-
-        tmp = userData;
-#if NODE_DEBUG
-        printf("<%s>len:%llu\n", __func__, (userData + userDataCnt - 1)->len);
-#endif
-    } while (str <= userParam + passConstant || *str2 == L'\0');
-    return (void *)userData;
+_end:
+    return userData;
 }
-#endif
-#endif
-#endif
+
+#endif /* ENABLE_WCHAR */

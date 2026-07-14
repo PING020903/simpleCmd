@@ -8,9 +8,9 @@
 #if CMD_METHOD_TABLE
 #define HASH_TABLE_DEBUG 0
 
-static cmdHash_node hashList_static[MAX_HASH_LIST] = { 0 };
+static cmdHash_node_t hashList_static[MAX_HASH_LIST] = { 0 };
 static int hashListEnd = CMDHASH_INVALID_INDEX;
-static int lastError = NODE_OK;
+static cmd_err_t lastError = CMD_NODE_OK;
 
 
 unsigned int cmdTable_CmdToHash(const char* string, int len) {
@@ -33,16 +33,16 @@ unsigned int cmdTable_CmdToHash(const char* string, int len) {
 
 
 int cmdTable_RegisterCMD(void* cmd, int cmd_len,
-    void* param, int param_len, ParameterHandler handler) {
+    void* param, int param_len, handler_fn_t handler) {
     unsigned int cmdHash, paramHash;
     int nextIndex;
     unsigned char cmdArr[MAX_COMMAND], paramArr[MAX_PARAMETER];
     if (!cmd || !param || !handler)
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
 
     nextIndex = hashListEnd + 1;
     if (nextIndex >= MAX_HASH_LIST)
-        return lastError = NODE_FAIL;
+        return lastError = CMD_NODE_ERR_FAIL;
     cmdHash = cmdTable_CmdToHash(cmd, cmd_len);
     paramHash = cmdTable_CmdToHash(param, param_len);
     hashList_static[nextIndex].command = cmdHash;
@@ -60,16 +60,16 @@ int cmdTable_RegisterCMD(void* cmd, int cmd_len,
     DEBUG_PRINT("cmd{%s}[%x] param{%s}[%x]", cmdArr, cmdHash, paramArr, paramHash);
     VAR_PRINT_HEX(hashListEnd);
 #endif
-    return lastError = NODE_OK;
+    return lastError = CMD_NODE_OK;
 }
 
 
 /**
  * @brief 命令解析
  * @param commandString 用户输入的字符串
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR, NODE_CMD_TOO_LONG, NODE_PARAM_TOO_LONG,
- * NODE_NOT_FIND_CMD, NODE_NOT_FIND_PARAM, NODE_PARSE_ERR
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG, CMD_NODE_ERR_TOOLONG, CMD_NODE_ERR_PARAM_TOOLONG,
+ * CMD_NODE_ERR_NOT_FINDCMD, CMD_NODE_ERR_NOT_FINDPARAM, CMD_NODE_ERR_PARSE
  */
 int cmdTable_CommandParse(const char* commandString) {
 
@@ -78,19 +78,19 @@ int cmdTable_CommandParse(const char* commandString) {
     userString* userData = NULL;
     if (commandString == NULL){
         ERROR_PRINT("");
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
     }
         
 
     if (hashListEnd == CMDHASH_INVALID_INDEX) {
         DEBUG_PRINT("no registration command...");
-        return NODE_NOT_YET_INIT;
+        return CMD_NODE_ERR_NOTINIT;
     }
 
     ParseSpace(commandString);
     if (userParse_GetUserParamCnt() < 2) {
         ERROR_PRINT("2");
-        lastError = NODE_ARG_ERR;
+        lastError = CMD_NODE_ERR_ARG;
         goto _err;
     }
 
@@ -106,7 +106,7 @@ int cmdTable_CommandParse(const char* commandString) {
     }
     if (targetIndex > hashListEnd) {
         DEBUG_PRINT("not found target command.");
-        lastError = NODE_NOT_FIND;
+        lastError = CMD_NODE_ERR_NOT_FIND;
         goto _err;
     }
 #if HASH_TABLE_DEBUG
@@ -115,24 +115,24 @@ int cmdTable_CommandParse(const char* commandString) {
     (userParse_GetUserParamCnt() > 2)
         ? hashList_static[targetIndex].handler(&userData[2])
         : hashList_static[targetIndex].handler(NULL);
-    lastError = NODE_OK;
+    lastError = CMD_NODE_OK;
 
 _err:
     RESET_USERDATA_RECORD();
     return lastError;
 }
 
-int cmdTable_updataCMDarg(cmdHash_node* _old, cmdHash_node* _new)
+int cmdTable_updataCMDarg(cmdHash_node_t* _old, cmdHash_node_t* _new)
 {
     if (!_old || !_new)
     {
-        lastError = NODE_ARG_ERR;
+        lastError = CMD_NODE_ERR_ARG;
         return lastError;
     }
 
     if (hashListEnd == CMDHASH_INVALID_INDEX)
     {
-        lastError = NODE_NOT_YET_INIT;
+        lastError = CMD_NODE_ERR_NOTINIT;
         return lastError;
     }
     for (int i = 0; i < (hashListEnd + 1); i++)
@@ -147,13 +147,13 @@ int cmdTable_updataCMDarg(cmdHash_node* _old, cmdHash_node* _new)
             break;
         }
     }
-    lastError = NODE_OK;
+    lastError = CMD_NODE_OK;
     return lastError;
 }
 
 int cmdTable_resetTable(void)
 {
-    lastError = NODE_OK;
+    lastError = CMD_NODE_OK;
     if (hashListEnd == CMDHASH_INVALID_INDEX)
         return lastError;
 
@@ -173,50 +173,50 @@ int cmdTable_resetTable(void)
  * @param
  * @return lastError
  */
-int cmdTable_GetLastError(void)
+cmd_err_t cmdTable_GetLastError(void)
 {
     switch (lastError)
     {
-    case NODE_OK:
+    case CMD_NODE_OK:
         DEBUG_PRINT("hashTable OK\n");
         break;
-    case NODE_FAIL:
+    case CMD_NODE_ERR_FAIL:
         DEBUG_PRINT("hashTable unknow error\n");
         break;
-    case NODE_ARG_ERR:
+    case CMD_NODE_ERR_ARG:
         DEBUG_PRINT("hashTable parameter passing error\n");
         break;
-    case NODE_NOT_FIND:
+    case CMD_NODE_ERR_NOT_FIND:
         DEBUG_PRINT("hashTable not find\n");
         break;
-    case NODE_NOT_FIND_CMD:
+    case CMD_NODE_ERR_NOT_FINDCMD:
         DEBUG_PRINT("hashTable not found command\n");
         break;
-    case NODE_NOT_FIND_PARAM:
+    case CMD_NODE_ERR_NOT_FINDPARAM:
         DEBUG_PRINT("hashTable not found parameter\n");
         break;
-    case NODE_ALLOC_ERR:
+    case CMD_NODE_ERR_MEM:
         DEBUG_PRINT("hashTable Alloc error, maybe RAM is not enough...\n");
         break;
-    case NODE_CMD_NODE_NULL:
+    case CMD_NODE_ERR_NULLNODE:
         DEBUG_PRINT("hashTable this command is null\n");
         break;
-    case NODE_PARAM_NODE_NULL:
+    case CMD_NODE_ERR_NULLPARAM:
         DEBUG_PRINT("hashTable command has no paramNode\n");
         break;
-    case NODE_REPEATING:
+    case CMD_NODE_ERR_REPEATING:
         DEBUG_PRINT("hashTable is repeating create\n");
         break;
-    case NODE_CMD_TOO_LONG:
+    case CMD_NODE_ERR_TOOLONG:
         DEBUG_PRINT("hashTable 'command' is too long\n");
         break;
-    case NODE_PARAM_TOO_LONG:
+    case CMD_NODE_ERR_PARAM_TOOLONG:
         DEBUG_PRINT("hashTable 'parameter' is too long\n");
         break;
-    case NODE_PARSE_ERR:
+    case CMD_NODE_ERR_PARSE:
         DEBUG_PRINT("hashTable parsing string error\n");
         break;
-    case NODE_NOT_YET_INIT:
+    case CMD_NODE_ERR_NOTINIT:
         DEBUG_PRINT("table have not been initialized...\n");
         break;
     default:

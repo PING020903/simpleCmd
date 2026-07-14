@@ -1,0 +1,161 @@
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+Install the latest PowerShell for new features and improvements! https://aka.ms/PSWindows
+
+PS C:\Users\12566> F:
+PS F:\> cd .\cmake_study\simpleCmd\
+PS F:\cmake_study\simpleCmd> cd .\build\bin\
+PS F:\cmake_study\simpleCmd\build\bin> .\outputFile.exe
+cmdTree Demo
+  1 — basic two-level routing (device/reset, device/ota)
+  2 — multi-level routing + BLE dataHandler
+  3 — interactive REPL
+  4 — quoted params demo
+> 1
+cmdTree (static, max=32 nodes):
+[00000000]
+  [d07076f3] H
+    [d218352d] H
+    [650d33c0] H
+
+--- 解析 'device' ---
+  [handler: device] — show device info
+
+--- 解析 'device reset' ---
+  [handler: reset] — rebooting...
+
+--- 解析 'device ota' ---
+  [handler: ota] — entering OTA mode
+
+--- 解析 'device bootloader' (不存在) ---
+  [handler: device] — show device info
+  extra arg: <bootloader>
+  ret=0 (expected -1 NOT_FOUND)
+Press any key to continue . . .
+PS F:\cmake_study\simpleCmd\build\bin> .\outputFile.exe
+cmdTree Demo
+  1 — basic two-level routing (device/reset, device/ota)
+  2 — multi-level routing + BLE dataHandler
+  3 — interactive REPL
+  4 — quoted params demo
+> 2
+cmdTree (static, max=32 nodes):
+[00000000]
+  [892e4ca0]
+    [d74f0d86]
+      [274e1290] H D
+      [e6e5718f] H D
+  [afd071e5] H
+    [af85ad29] H
+    [dbcb75f9] H
+
+--- 'test' ---
+  [handler: test] — try 'test hardware' or 'test flash'
+
+--- 'test hardware' ---
+  [handler: hardware] — running hardware self-test
+
+--- 'test hardware 0' (透传) ---
+  [handler: hardware] — running hardware self-test
+  test item: <0>
+
+--- 'wait dat names' ---
+  [handler: names] — waiting for BLE names data...
+  active dataHandler: 00971e80
+
+--- 'wait dat font' ---
+  [handler: font] — waiting for BLE font data...
+
+--- 模拟 BLE 数据回调 ---
+  [handler: names] — waiting for BLE names data...
+  [data: names] received 13 bytes
+Press any key to continue . . .
+PS F:\cmake_study\simpleCmd\build\bin> .\outputFile.exe
+cmdTree Demo
+  1 — basic two-level routing (device/reset, device/ota)
+  2 — multi-level routing + BLE dataHandler
+  3 — interactive REPL
+  4 — quoted params demo
+> 4
+--- 'device "hello world"' ---
+  [handler: device] — show device info
+  extra arg: <hello world>
+
+--- 'device normal_param' ---
+  [handler: device] — show device info
+  extra arg: <normal_param>
+Press any key to continue . . .
+PS F:\cmake_study\simpleCmd\build\bin> .\outputFile.exe
+cmdTree Demo
+  1 — basic two-level routing (device/reset, device/ota)
+  2 — multi-level routing + BLE dataHandler
+  3 — interactive REPL
+  4 — quoted params demo
+> 3
+=== cmdTree REPL ===
+Commands: device [reset|ota] | test [hardware|flash]
+          wait dat [names|font] | list | exit
+Quoted raw: device "hello world"
+====================
+
+> help
+  unknown command: 'help'
+> test
+  [handler: test] — try 'test hardware' or 'test flash'
+> test flash
+  [handler: flash] — running flash test
+> test font
+  [handler: test] — try 'test hardware' or 'test flash'
+> test hardware
+  [handler: hardware] — running hardware self-test
+> wait datnames
+  unknown command: 'wait datnames'
+> waitdat names
+  unknown command: 'waitdat names'
+> wait dat names
+  [handler: names] — waiting for BLE names data...
+> wait dat names dataData
+  [handler: names] — waiting for BLE names data...
+> wait dat font 对对对
+  [handler: font] — waiting for BLE font data...
+> device ote
+  [handler: device] — show device info
+  extra arg: <ote>
+> device ota
+  [handler: ota] — entering OTA mode
+> device
+  [handler: device] — show device info
+> list
+cmdTree (static, max=32 nodes):
+[00000000]
+  [cded1a85] H
+  [0cfb5881] H
+  [892e4ca0]
+    [d74f0d86]
+      [274e1290] H D
+      [e6e5718f] H D
+  [afd071e5] H
+    [af85ad29] H
+    [dbcb75f9] H
+  [d07076f3] H
+    [d218352d] H
+    [650d33c0] H
+> list dd
+cmdTree (static, max=32 nodes):
+[00000000]
+  [cded1a85] H
+  [0cfb5881] H
+  [892e4ca0]
+    [d74f0d86]
+      [274e1290] H D
+      [e6e5718f] H D
+  [afd071e5] H
+    [af85ad29] H
+    [dbcb75f9] H
+  [d07076f3] H
+    [d218352d] H
+    [650d33c0] H
+> exit
+bye.
+PS F:\cmake_study\simpleCmd\build\bin>

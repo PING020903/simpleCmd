@@ -1,0 +1,8 @@
+CompileFlags:
+  Add:
+    - "-std=gnu99"
+    - "--target=x86_64-w64-mingw32"
+    - "-I=F:/cmake_study/ringBuffer/include"
+    - "-isystem=F:/mingw64/include"
+    - "-isystem=F:/mingw64/x86_64-w64-mingw32/include"
+    - "-isystem=F:/mingw64/lib/gcc/x86_64-w64-mingw32/15.2.0/include"

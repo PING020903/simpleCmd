@@ -33,15 +33,15 @@ static void cmdNode_showList_wrapper(void* arg) {
 #define DEFAULT_CMD_W L"reg"
 
 /**
- * @brief 初始节点
+ * @brief 命令链表头（第三方库 ll.h）
  */
-static command_node* FristNode = NULL;
+static LIST_INIT(cmd_list_head);
 static const char* successStr = "Successful registration.";
 static const wchar_t* successStrW = L"(isWch) Successful registration.";
 /**
  * @brief 上一次函数运行的错误
  */
-static int lastError = NODE_OK;
+static cmd_err_t lastError = CMD_NODE_OK;
 
 
 
@@ -52,31 +52,31 @@ static int lastError = NODE_OK;
                           }while(0)
 
 #if NODE_DEBUG
-static command_node* compare1 = NULL, * compare2 = NULL;
-static parameter_node* compare3 = NULL, * compare4 = NULL;
+static command_node_t* compare1 = NULL, * compare2 = NULL;
+static parameter_node_t* compare3 = NULL, * compare4 = NULL;
 #endif
 
 #define CHECK_BUF(buf) do{\
 if(buf==NULL){\
 free(buf);\
-return lastError = NODE_ALLOC_ERR;\
+return lastError = CMD_NODE_ERR_MEM;\
 }}while(0)
 
 #if NODE_DEBUG
 /**
  * @brief 打印指定节点的左右临近节点命令名
  * @param CmdNode 命令节点
- * @return OK： NODE_OK
- * @return ERROR: NODE_ARG_ERR
+ * @return OK： CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG
  */
-static int printCmdNode_command(command_node* CmdNode)
+static int printCmdNode_command(command_node_t* CmdNode)
 {
-    command_node* NEXT = NULL, * PREV = NULL;
+    command_node_t* NEXT = NULL, * PREV = NULL;
     if (CmdNode == NULL)
-        return NODE_ARG_ERR;
+        return CMD_NODE_ERR_ARG;
 
-    NEXT = CmdNode->next;
-    PREV = CmdNode->prev;
+    NEXT = list_entry(CmdNode->node.next, command_node_t, node);
+    PREV = list_entry(CmdNode->node.prev, command_node_t, node);
 
 
 
@@ -92,7 +92,7 @@ static int printCmdNode_command(command_node* CmdNode)
         ? wprintf(L" next:<%ls>\n", NEXT->command_string)
         : printf(" next:<%s>\n", (char*)(NEXT->command_string));
 
-    return NODE_OK;
+    return CMD_NODE_OK;
 }
 #endif
 
@@ -140,14 +140,14 @@ static char UserCharacterParse(const char* str)
 /**
  * @brief 大写转小写
  * @param str 目标字符串
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG
  */
 static int UppercaseToLowercase(char* str)
 {
     size_t len = 0, i = 0;
     if (str == NULL)
-        return NODE_ARG_ERR;
+        return CMD_NODE_ERR_ARG;
 
     len = strlen(str);
 
@@ -156,7 +156,7 @@ static int UppercaseToLowercase(char* str)
         // 将不规则的大小写输入统一为小写
         *(str + i) = UserCharacterParse(str + i);
     }
-    return NODE_OK;
+    return CMD_NODE_OK;
 }
 
 #ifdef WCHAR_MIN
@@ -179,14 +179,14 @@ static wchar_t UserCharacterParseW(const wchar_t* str)
 /**
  * @brief 大写转小写( 宽字符版本 )
  * @param str
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG
  */
 static int UppercaseToLowercaseW(wchar_t* str)
 {
     size_t len = 0, i = 0;
     if (str == NULL)
-        return NODE_ARG_ERR;
+        return CMD_NODE_ERR_ARG;
 
     len = wcslen(str);
 
@@ -195,7 +195,7 @@ static int UppercaseToLowercaseW(wchar_t* str)
         // 将不规则的大小写输入统一为小写
         *(str + i) = UserCharacterParseW(str + i);
     }
-    return NODE_OK;
+    return CMD_NODE_OK;
 }
 
 /**
@@ -227,52 +227,14 @@ static int passableChParamW(const wchar_t ch)
 #endif
 
 /**
- * @brief 当前命令链表中最后的节点
- * @return target node
- */
-static command_node* CommandFinalNode()
-{
-    command_node* CmdNode = FristNode;
-    while (CmdNode->next != FristNode)// 遍历链表
-    {
-        if (CmdNode != CmdNode->next)
-        {
-            CmdNode = CmdNode->next;
-        }
-        else
-        {
-            break;
-        }
-    }
-    return CmdNode;
-}
-
-/**
- * @brief 参数链表中最后的节点
- * @param node
- * @return target node
- */
-static parameter_node* ParameterFinalNode(const command_node* node)
-{
-    parameter_node* paramNode = node->ParameterNode_head;
-    if (node == NULL)
-        return NULL;
-    while (paramNode->next != node->ParameterNode_head)
-    {
-        paramNode = paramNode->next;
-    }
-    return paramNode;
-}
-
-/**
  * @brief 分配命令节点的字符串
  * @param node 当前命令节点
  * @param isWch 是否使用宽字符
  * @param cmdStr 命令
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR, NODE_CMD_TOO_LONG
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG, CMD_NODE_ERR_TOOLONG
  */
-static int AssignCommandNodeStr(command_node* node,
+static int AssignCommandNodeStr(command_node_t* node,
     const bool isWch,
     const void* cmdStr)
 {
@@ -280,7 +242,7 @@ static int AssignCommandNodeStr(command_node* node,
     wchar_t* strW = NULL;
     char* str = NULL, * tmp = NULL;
     if (node == NULL || cmdStr == NULL)
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
 
     node->isWch = isWch;
     switch (isWch)
@@ -291,18 +253,18 @@ static int AssignCommandNodeStr(command_node* node,
         strW = (wchar_t*)cmdStr;
         len = wcslen(strW);
         if (len > (MAX_COMMAND - 1))
-            return lastError = NODE_CMD_TOO_LONG;
+            return lastError = CMD_NODE_ERR_TOOLONG;
 
         // 非法字符检查
         for (size_t i = 0; i < len; i++)
         {
             if (passableChCmdW(*(strW + i)))
-                return lastError = NODE_ARG_ERR;
+                return lastError = CMD_NODE_ERR_ARG;
         }
         wcscpy(node->command_string, strW);
         UppercaseToLowercaseW(node->command_string);
 #else
-        lastError = NODE_UNSUPPORT;
+        lastError = CMD_NODE_ERR_UNSUPPORT;
 #endif
     }
     break;
@@ -312,35 +274,35 @@ static int AssignCommandNodeStr(command_node* node,
         str = (char*)cmdStr;
         len = strlen(str);
         if (len > (MAX_COMMAND * sizeof(wchar_t) - 1))
-            return lastError = NODE_CMD_TOO_LONG;
+            return lastError = CMD_NODE_ERR_TOOLONG;
 
         // 非法字符检查
         for (size_t i = 0; i < len; i++)
         {
             if (passableChCmd(*(str + i)))
-                return lastError = NODE_ARG_ERR;
+                return lastError = CMD_NODE_ERR_ARG;
         }
         strcpy(tmp, str);
         UppercaseToLowercase(tmp);
     }
     break;
     }
-    return lastError = NODE_OK;
+    return lastError = CMD_NODE_OK;
 }
 
 /**
  * @brief 打印指定命令下所有参数
  * @param CmdNode 命令节点
  */
-void cmdNode_showParam(command_node* CmdNode)
+void cmdNode_showParam(command_node_t* CmdNode)
 {
-    parameter_node* node = CmdNode->ParameterNode_head;
+    parameter_node_t* node = NULL;
     char* cmdstring = NULL;
     char* paramstring = NULL;
     if (CmdNode == NULL)
         return;
 
-    if (node == NULL)
+    if (CmdNode->param_head.next == &CmdNode->param_head)
     {
 #if (ENABLE_WCHAR == 1)
         (CmdNode->isWch)
@@ -359,7 +321,7 @@ void cmdNode_showParam(command_node* CmdNode)
 
     putchar('\n');
     printf("  parameters:\n");
-    do
+    list_for_each_entry(node, &CmdNode->param_head, node)
     {
 #if (ENABLE_WCHAR == 1)
         (CmdNode->isWch)
@@ -369,13 +331,11 @@ void cmdNode_showParam(command_node* CmdNode)
         paramstring = (char*)node->parameter_string;
         if (CmdNode->isWch) {
             printf("    (unsupport display)\n");
-            goto _nextNode;
+            continue;
         }
         printf("        %s\n", paramstring);
 #endif
-    _nextNode:
-        node = node->next;
-    } while (node != CmdNode->ParameterNode_head);
+    }
 }
 
 /**
@@ -383,18 +343,18 @@ void cmdNode_showParam(command_node* CmdNode)
  */
 void cmdNode_showList(void)
 {
-    command_node* node = FristNode;
+    command_node_t* node = NULL;
     char* cmdstring = NULL;
     int cnt = 1;
 
-    if (node == NULL)
+    if (cmd_list_head.next == &cmd_list_head)
     {
         printf("list null...\n");
         return;
     }
 
     putchar('\n');
-    do
+    list_for_each_entry(node, &cmd_list_head, node)
     {
 #if (ENABLE_WCHAR == 1)
         (node->isWch)
@@ -404,14 +364,12 @@ void cmdNode_showList(void)
         cmdstring = (char*)node->command_string;
         if (node->isWch) {
             printf("%d:command(isWchar unsupport display) <>", cnt++);
-            goto _nextNode;
+            continue;
         }
         printf("%d:command  <%s>     ", cnt++, cmdstring);
 #endif
-    _nextNode:
         cmdNode_showParam(node);
-        node = node->next;
-    } while (node != FristNode); // 为了保证遍历完整
+    }
     putchar('\n');
 }
 
@@ -422,23 +380,23 @@ void cmdNode_showList(void)
  * @return ERROR: NULL
  * @return OK: target node
  */
-command_node* cmdNode_FindCommand(const char* command,
+command_node_t* cmdNode_FindCommand(const char* command,
     const wchar_t* commandW)
 {
-    command_node* CmdNode = FristNode;
+    command_node_t* CmdNode = NULL;
     char CmdTmp[MAX_COMMAND * sizeof(wchar_t)] = { 0 };
     wchar_t CmdTmpW[MAX_COMMAND] = { 0 };
 
-    if (CmdNode == NULL)
+    if (cmd_list_head.next == &cmd_list_head)
     {
-        lastError = NODE_NOT_YET_INIT;
+        lastError = CMD_NODE_ERR_NOTINIT;
         return NULL;
     }
 
 
     if (command == NULL && commandW == NULL)
     {
-        lastError = NODE_ARG_ERR;
+        lastError = CMD_NODE_ERR_ARG;
         return NULL;
     }
 
@@ -447,7 +405,7 @@ command_node* cmdNode_FindCommand(const char* command,
     {
         if (strlen(command) > (MAX_COMMAND * sizeof(wchar_t) - 1))
         {
-            lastError = NODE_CMD_TOO_LONG;
+            lastError = CMD_NODE_ERR_TOOLONG;
             return NULL;
         }
 
@@ -455,20 +413,18 @@ command_node* cmdNode_FindCommand(const char* command,
         if (UppercaseToLowercase(CmdTmp))// 确保字符统一小写
             return NULL;
 
-        do
+        list_for_each_entry(CmdNode, &cmd_list_head, node)
         {
             if (strcmp((char*)(CmdNode->command_string), CmdTmp) == 0)
                 return CmdNode;
-
-            CmdNode = CmdNode->next;
-        } while (CmdNode != FristNode);
+        }
     }
 #if (ENABLE_WCHAR == 1)
     else if (commandW != NULL)
     {
         if (wcslen(commandW) > (MAX_COMMAND - 1))
         {
-            lastError = NODE_CMD_TOO_LONG;
+            lastError = CMD_NODE_ERR_TOOLONG;
             return NULL;
         }
 
@@ -476,27 +432,25 @@ command_node* cmdNode_FindCommand(const char* command,
         if (UppercaseToLowercaseW(CmdTmpW))// 确保字符统一小写
             return NULL;
 
-        do
+        list_for_each_entry(CmdNode, &cmd_list_head, node)
         {
             if (wcscmp(CmdNode->command_string, CmdTmpW) == 0)
                 return CmdNode;
-
-            CmdNode = CmdNode->next;
-        } while (CmdNode != FristNode);
+        }
     }
 #else
     else if (commandW != NULL)
     {
-        lastError = NODE_UNSUPPORT;
+        lastError = CMD_NODE_ERR_UNSUPPORT;
         return NULL;
     }
 #endif
     else
     {
-        lastError = NODE_FAIL;
+        lastError = CMD_NODE_ERR_FAIL;
         return NULL;
     }
-    lastError = NODE_NOT_FIND_CMD;
+    lastError = CMD_NODE_ERR_NOT_FINDCMD;
     return NULL; // 遍历后均无所获
 }
 
@@ -504,18 +458,18 @@ command_node* cmdNode_FindCommand(const char* command,
  * @brief 注册命令
  * @param isWch 该命令是否使用宽字符
  * @param cmdStr 命令
- * @return OK: NODE_OK
- * @return ERROR: NODE_FAIL, NODE_ARG_ERR, NODE_CMD_TOO_LONG, NODE_REPEATING
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_FAIL, CMD_NODE_ERR_ARG, CMD_NODE_ERR_TOOLONG, CMD_NODE_ERR_REPEATING
  */
 int cmdNode_RegisterCommand(const bool isWch,
     const void* cmdStr)
 {
-    command_node* tmp = NULL, * repeating = NULL;
-    command_node* CmdNode = NULL;// 要被初始化的节点
+    command_node_t* repeating = NULL;
+    command_node_t* CmdNode = NULL;// 要被初始化的节点
     if (cmdStr == NULL)
     {
         printf("The command is null, exit func:<%s>\n", __func__);
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
     }
 
 #if NODE_DEBUG
@@ -523,81 +477,52 @@ int cmdNode_RegisterCommand(const bool isWch,
         ? wprintf(L"(RegisterCommand)>>isWch--%ls\n", (wchar_t*)cmdStr)
         : printf("(RegisterCommand)>>--%s\n", (char*)cmdStr);
 #endif
-    if (FristNode == NULL)// 首次注册命令节点
-    {
-        FristNode = (command_node*)malloc(sizeof(command_node));
-        CHECK_BUF(FristNode);
-        FristNode->prev = FristNode;
-        FristNode->next = FristNode;
-        FristNode->ParameterNode_head = NULL;
-        if (AssignCommandNodeStr(FristNode, isWch, cmdStr))
-        {
-            free(FristNode);
-            return lastError;
-        }
-#if NODE_DEBUG
-        PRINT_CMD(FristNode);
-#endif
-        return lastError = NODE_OK;
-    }
-    else
-    {
-        CmdNode = (command_node*)malloc(sizeof(command_node));
-        CHECK_BUF(CmdNode);
-        CmdNode->ParameterNode_head = NULL;
-        if (AssignCommandNodeStr(CmdNode, isWch, cmdStr))
-        {
-            free(CmdNode);
-            return lastError;
-        }
 
-        // 寻找是否有相同命令的节点, 当前节点尚未接入链表, 故此不会影响寻找
+    CmdNode = (command_node_t*)malloc(sizeof(command_node_t));
+    CHECK_BUF(CmdNode);
+    // 初始化参数链表头
+    CmdNode->param_head = (struct ll_head)ll_head_INIT(CmdNode->param_head);
+    if (AssignCommandNodeStr(CmdNode, isWch, cmdStr))
+    {
+        free(CmdNode);
+        return lastError;
+    }
+
+    // 寻找是否有相同命令的节点
 #if (ENABLE_WCHAR == 1)
-        repeating = (isWch)
-            ? cmdNode_FindCommand(NULL, CmdNode->command_string)
-            : cmdNode_FindCommand((char*)(CmdNode->command_string), NULL);
+    repeating = (isWch)
+        ? cmdNode_FindCommand(NULL, CmdNode->command_string)
+        : cmdNode_FindCommand((char*)(CmdNode->command_string), NULL);
 #else
-        repeating = cmdNode_FindCommand((char*)(CmdNode->command_string), NULL);
+    repeating = cmdNode_FindCommand((char*)(CmdNode->command_string), NULL);
 #endif
-        if (repeating != NULL)
-        {
-            printf("The same command already exists...\n");
-            free(CmdNode);
-            return lastError = NODE_REPEATING;
-        }
-        tmp = CommandFinalNode();
-
-        // 节点接驳
-        CmdNode->prev = tmp;        // this to currentEnd
-        tmp->next = CmdNode;        // currentEnd to this
-        CmdNode->next = FristNode;  // currentEnd to Frist
-        FristNode->prev = CmdNode;  // Frist to currentEnd
-
-#if NODE_DEBUG
-        PRINT_CMD(CmdNode);
-#endif
-        return lastError = NODE_OK;
+    if (repeating != NULL)
+    {
+        printf("The same command already exists...\n");
+        free(CmdNode);
+        return lastError = CMD_NODE_ERR_REPEATING;
     }
 
-    return lastError = NODE_FAIL;
+    // 使用第三方库 list_add_tail 添加到链表尾部
+    list_add_tail(&CmdNode->node, &cmd_list_head);
+
+    return lastError = CMD_NODE_OK;
 }
 
 /**
  * @brief 取消注册单个命令下的所有参数
  * @param node 命令节点
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR, NODE_PARAM_NODE_NULL
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG, CMD_NODE_ERR_NULLPARAM
  */
-int cmdNode_unRegisterAllParameters(command_node* node)
+int cmdNode_unRegisterAllParameters(command_node_t* node)
 {
-    parameter_node* tmp = NULL, * nextNode = NULL;
+    parameter_node_t* tmp = NULL, * n = NULL;
     char* string = NULL;
     if (node == NULL)
-        return lastError = NODE_ARG_ERR;
-    else
-        tmp = node->ParameterNode_head;
+        return lastError = CMD_NODE_ERR_ARG;
 
-    if (tmp == NULL)
+    if (node->param_head.next == &node->param_head)
     {
 #if (ENABLE_WCHAR == 1)
         (node->isWch)
@@ -607,24 +532,21 @@ int cmdNode_unRegisterAllParameters(command_node* node)
         string = (char*)node->command_string;
         if (node->isWch) {
             printf("<>(wchar is unsupport) ParameterNode is NULL.\n");
-            return lastError = NODE_OK;
+            return lastError = CMD_NODE_OK;
         }
         printf("<%s> ParameterNode is NULL.\n", string);
 #endif
-        return lastError = NODE_OK;
+        return lastError = CMD_NODE_OK;
     }
 
-    do
+    list_for_each_entry_safe(tmp, n, &node->param_head, node)
     {
-        nextNode = tmp->next;// 保存下一节点地址
-        if (nextNode == NULL)
-            return lastError = NODE_PARAM_NODE_NULL;
-        tmp->prev = NULL;
-        tmp->next = NULL;
-        free(tmp);// 释放当前节点
-        tmp = nextNode;// 切换到下一节点
-    } while (tmp != node->ParameterNode_head);
-    node->ParameterNode_head = NULL; // 此时已经释放完毕
+        list_del(&tmp->node);
+        free(tmp);
+    }
+
+    // 重新初始化参数链表头
+    node->param_head = (struct ll_head)ll_head_INIT(node->param_head);
 
 #if (ENABLE_WCHAR == 1)
     (node->isWch)
@@ -633,7 +555,7 @@ int cmdNode_unRegisterAllParameters(command_node* node)
 #else
     printf("<%s> ParameterNodes unregister finish.\n", (char*)(node->command_string));
 #endif
-    return lastError = NODE_OK;
+    return lastError = CMD_NODE_OK;
 }
 
 /**
@@ -642,27 +564,26 @@ int cmdNode_unRegisterAllParameters(command_node* node)
  * @param paramStr 参数
  * @return
  */
-static parameter_node* FindParameter(const command_node* node,
+static parameter_node_t* FindParameter(const command_node_t* node,
     const void* paramStr)
 {
-    parameter_node* paramNode = NULL;
+    parameter_node_t* paramNode = NULL;
     char* str = NULL;
     wchar_t* strW = NULL;
     size_t len = 0;
     if (node == NULL)
     {
-        lastError = NODE_PARAM_NODE_NULL;
+        lastError = CMD_NODE_ERR_NULLPARAM;
         return NULL;
     }
 
     if (paramStr == NULL)
     {
-        lastError = NODE_ARG_ERR;
+        lastError = CMD_NODE_ERR_ARG;
         return NULL;
     }
 
 
-    paramNode = node->ParameterNode_head;
     switch (node->isWch)
     {
     case false:
@@ -672,16 +593,15 @@ static parameter_node* FindParameter(const command_node* node,
 
         if (len > (MAX_PARAMETER * sizeof(wchar_t) - 1))
         {
-            lastError = NODE_PARAM_TOO_LONG;
+            lastError = CMD_NODE_ERR_PARAM_TOOLONG;
             return NULL;
         }
 
-        do// 即便只有一个 node 也要比较
+        list_for_each_entry(paramNode, &node->param_head, node)
         {
             if (strcmp((char*)(paramNode->parameter_string), str) == 0)
                 return paramNode;
-            paramNode = paramNode->next;
-        } while (paramNode != node->ParameterNode_head);
+        }
     }
     break;
     case true:
@@ -692,25 +612,24 @@ static parameter_node* FindParameter(const command_node* node,
 
         if (len > (MAX_PARAMETER - 1))
         {
-            lastError = NODE_PARAM_TOO_LONG;
+            lastError = CMD_NODE_ERR_PARAM_TOOLONG;
             return NULL;
         }
 
-        do// 即便只有一个 node 也要比较
+        list_for_each_entry(paramNode, &node->param_head, node)
         {
             if (wcscmp(paramNode->parameter_string, strW) == 0)
                 return paramNode;
-            paramNode = paramNode->next;
-        } while (paramNode != node->ParameterNode_head);
+        }
 #else
-        lastError = NODE_UNSUPPORT;
+        lastError = CMD_NODE_ERR_UNSUPPORT;
         return NULL;
 #endif
     }
     break;
     }
 
-    lastError = NODE_NOT_FIND_PARAM;
+    lastError = CMD_NODE_ERR_NOT_FINDPARAM;
     return NULL; // 遍历后均无所获
 }
 
@@ -718,13 +637,13 @@ static parameter_node* FindParameter(const command_node* node,
  * @brief 取消已注册命令
  * @param command 取决于注册节点时是否使用了宽字符, 若未使用宽字符, 另一个则填 NULL
  * @param commandW 目标命令( 宽字符 )
- * @return OK: NODE_OK
- * @return ERROR: NODE_FAIL, NODE_ARG_ERR, NODE_CMD_NODE_NULL, NODE_NOT_YET_INIT,
- * NODE_NOT_FIND_CMD
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_FAIL, CMD_NODE_ERR_ARG, CMD_NODE_ERR_NULLNODE, CMD_NODE_ERR_NOTINIT,
+ * CMD_NODE_ERR_NOT_FINDCMD
  */
 int cmdNode_unRegisterCommand(const char* command, const wchar_t* commandW)
 {
-    command_node* CmdNode = NULL;// 要被删除的命令节点
+    command_node_t* CmdNode = NULL;// 要被删除的命令节点
     char cmdArr[MAX_COMMAND * sizeof(wchar_t)] = { 0 };
     wchar_t cmdArrW[MAX_COMMAND] = { 0 };
     int ret = 0;
@@ -732,10 +651,10 @@ int cmdNode_unRegisterCommand(const char* command, const wchar_t* commandW)
     if (command == NULL && commandW == NULL)
     {
         printf("The command is null, exit func:<%s>\n", __func__);
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
     }
 
-    if (FristNode == NULL)
+    if (cmd_list_head.next == &cmd_list_head)
     {
         if (command) {
             printf("<%s>Command node does not yet exist\n", command);
@@ -748,7 +667,7 @@ int cmdNode_unRegisterCommand(const char* command, const wchar_t* commandW)
         }
 #endif
     _end:
-        lastError = NODE_CMD_NODE_NULL;
+        lastError = CMD_NODE_ERR_NULLNODE;
         return lastError;
     }
 
@@ -765,13 +684,13 @@ int cmdNode_unRegisterCommand(const char* command, const wchar_t* commandW)
         UppercaseToLowercaseW(cmdArrW);
         CmdNode = cmdNode_FindCommand(NULL, cmdArrW);
 #else
-        lastError = NODE_UNSUPPORT;
+        lastError = CMD_NODE_ERR_UNSUPPORT;
         return lastError;
 #endif
     }
     else
     {
-        return lastError = NODE_FAIL;
+        return lastError = CMD_NODE_ERR_FAIL;
     }
 
 
@@ -779,32 +698,11 @@ int cmdNode_unRegisterCommand(const char* command, const wchar_t* commandW)
 
     if (CmdNode != NULL)// 通过 command 寻找 CommandNode
     {
-        // 若只剩下头节点
-        if (CmdNode->prev == CmdNode && CmdNode->next == CmdNode)
-            FristNode = NULL;
-
-        // 更改当前节点的邻居节点对本节点的指针
-        ((command_node*)(CmdNode->prev))->next = CmdNode->next;
-#if NODE_DEBUG
-        printCmdNode_command(CmdNode->prev);
-#endif
-        if (CmdNode == FristNode)// 若头节点被删除, 更新头节点
-        {
-            FristNode = CmdNode->next;
-#if NODE_DEBUG
-            printf("update FristNode, %p\n", FristNode);
-#endif
-        }
-
-
-        ((command_node*)(CmdNode->next))->prev = CmdNode->prev;
-#if NODE_DEBUG
-        printCmdNode_command(CmdNode->next);
-#endif
-
         ret = cmdNode_unRegisterAllParameters(CmdNode);
-        if (ret == NODE_OK)
+        if (ret == CMD_NODE_OK)
         {
+            // 使用第三方库 list_del 从链表移除
+            list_del(&CmdNode->node);
 #if (ENABLE_WCHAR == 1)
             (CmdNode->isWch)
                 ? wprintf(L"<%ls> CommandNodes unregister finish.\n",
@@ -816,7 +714,7 @@ int cmdNode_unRegisterCommand(const char* command, const wchar_t* commandW)
                 (char*)(CmdNode->command_string));
 #endif
             free(CmdNode);
-            return lastError = NODE_OK;
+            return lastError = CMD_NODE_OK;
         }
 
     }
@@ -828,7 +726,7 @@ int cmdNode_unRegisterCommand(const char* command, const wchar_t* commandW)
             wprintf(L"<%ls>not find \n", commandW);
         return lastError;
     }
-    return lastError = NODE_FAIL;
+    return lastError = CMD_NODE_ERR_FAIL;
 }
 
 /**
@@ -837,28 +735,28 @@ int cmdNode_unRegisterCommand(const char* command, const wchar_t* commandW)
  * @param oldCommandW 旧命令( 宽字符 )
  * @param newCommand 新命令
  * @param newCommandW 新命令( 宽字符 )
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR, NODE_NOT_FIND_CMD, NODE_REPEATING, NODE_NOT_YET_INIT,
- * NODE_FAIL
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG, CMD_NODE_ERR_NOT_FINDCMD, CMD_NODE_ERR_REPEATING, CMD_NODE_ERR_NOTINIT,
+ * CMD_NODE_ERR_FAIL
  */
 int cmdNode_updateCommand(char* oldCommand, wchar_t* oldCommandW,
     char* newCommand, wchar_t* newCommandW)
 {
-    command_node* CmdNode = NULL;
-    int ret = NODE_OK;
+    command_node_t* CmdNode = NULL;
+    int ret = CMD_NODE_OK;
     if (oldCommand)
     {
         if (newCommand == NULL)
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
     }
     else if (oldCommandW)
     {
         if (newCommandW == NULL)
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
     }
     else
     {
-        return lastError = NODE_FAIL;
+        return lastError = CMD_NODE_ERR_FAIL;
     }
 
     if (oldCommand)
@@ -874,7 +772,7 @@ int cmdNode_updateCommand(char* oldCommand, wchar_t* oldCommandW,
         if (CmdNode == NULL)
         {
             printf("<%s>not find\n", oldCommand);
-            return lastError = NODE_NOT_FIND_CMD;
+            return lastError = CMD_NODE_ERR_NOT_FINDCMD;
         }
 
         // 判断是否已经存在新命令节点
@@ -882,11 +780,11 @@ int cmdNode_updateCommand(char* oldCommand, wchar_t* oldCommandW,
         {
             printf("The same command<%s> already exists, \
 it has reverted to the old command<%s> name.\n", newCommand, oldCommand);
-            return lastError = NODE_REPEATING;
+            return lastError = CMD_NODE_ERR_REPEATING;
         }
 
         AssignCommandNodeStr(CmdNode, CmdNode->isWch, newCommand);
-        return lastError = NODE_OK;
+        return lastError = CMD_NODE_OK;
     }
 
     if (oldCommandW)
@@ -911,42 +809,40 @@ it has reverted to the old command<%s> name.\n", newCommand, oldCommand);
         {
             wprintf(L"The same command<%ls> already exists, \
 it has reverted to the old command<%s> name.\n", newCommandW, oldCommandW);
-            return lastError = NODE_REPEATING;
+            return lastError = CMD_NODE_ERR_REPEATING;
         }
 
         AssignCommandNodeStr(CmdNode, CmdNode->isWch, newCommandW);
-        return lastError = NODE_OK;
+        return lastError = CMD_NODE_OK;
 #else
-        lastError = NODE_UNSUPPORT;
+        lastError = CMD_NODE_ERR_UNSUPPORT;
         return lastError;
 #endif
     }
-    return lastError = NODE_FAIL;
+    return lastError = CMD_NODE_ERR_FAIL;
 }
 
 /**
  * @brief 取消注册全部命令
  * @param
- * @return OK: NODE_OK
- * @return ERROR: NODE_FAIL, NODE_NOT_YET_INIT
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_FAIL, CMD_NODE_ERR_NOTINIT
  */
 int cmdNode_unRegisterAllCommand(void)
 {
-    command_node* CmdNode = FristNode;
-    command_node* nextNode = NULL;
+    command_node_t* CmdNode = NULL, * n = NULL;
     char* string = NULL;
-    if (CmdNode == NULL)
+    if (cmd_list_head.next == &cmd_list_head)
     {
         printf("Command not yet created\n");
-        return lastError = NODE_NOT_YET_INIT;
+        return lastError = CMD_NODE_ERR_NOTINIT;
     }
 
-    do
+    list_for_each_entry_safe(CmdNode, n, &cmd_list_head, node)
     {
         lastError = cmdNode_unRegisterAllParameters(CmdNode);
-        if (lastError != NODE_OK)
+        if (lastError != CMD_NODE_OK)
         {
-            FristNode = CmdNode;
             printf("The delete command encountered an unknown failure\n");
             return lastError;
         }
@@ -963,15 +859,11 @@ int cmdNode_unRegisterAllCommand(void)
             printf("<%s> deleted\n", string);
 #endif
 
-        nextNode = CmdNode->next;// 先保存 next 节点地址
-        CmdNode->prev = NULL;// 断开 prev 节点
-        CmdNode->next = NULL;// 断开 next 节点
-        free(CmdNode);       // 释放当前节点
-        CmdNode = nextNode;  // 节点移动
-    } while (CmdNode != FristNode);
+        list_del(&CmdNode->node);
+        free(CmdNode);
+    }
 
 
-    FristNode = NULL;
     printf("All commands deleted successfully\n");
     return lastError;
 }
@@ -981,10 +873,10 @@ int cmdNode_unRegisterAllCommand(void)
  * @param node 当前参数节点
  * @param isWch 命令节点的 isWch
  * @param paramStr 参数
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR, NODE_PARAM_TOO_LONG
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG, CMD_NODE_ERR_PARAM_TOOLONG
  */
-static int AssignParameterNodeStr(parameter_node* node,
+static int AssignParameterNodeStr(parameter_node_t* node,
     const bool isWch,
     const void* paramStr)
 {
@@ -993,10 +885,10 @@ static int AssignParameterNodeStr(parameter_node* node,
     size_t len = 0;
 
     if (node == NULL)
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
 
     if (paramStr == NULL)
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
 
     switch (isWch)
     {
@@ -1006,14 +898,14 @@ static int AssignParameterNodeStr(parameter_node* node,
         len = strlen(str);
 
         if (len > (MAX_PARAMETER * sizeof(wchar_t) - 1))
-            return lastError = NODE_PARAM_TOO_LONG;
+            return lastError = CMD_NODE_ERR_PARAM_TOOLONG;
         else
         {
             // 检查参数是否有非法字符
             for (size_t i = 0; i < len; i++)
             {
                 if (passableChParam(*(str + i)))
-                    return lastError = NODE_ARG_ERR;
+                    return lastError = CMD_NODE_ERR_ARG;
             }
             memset(node->parameter_string, 0, sizeof(node->parameter_string));
             strcpy((char*)(node->parameter_string), str);
@@ -1027,26 +919,26 @@ static int AssignParameterNodeStr(parameter_node* node,
         len = wcslen(strW);
 
         if (len > (MAX_PARAMETER - 1))
-            return lastError = NODE_PARAM_TOO_LONG;
+            return lastError = CMD_NODE_ERR_PARAM_TOOLONG;
         else
         {
             for (size_t i = 0; i < len; i++)
             {
                 // 检查参数是否有非法字符
                 if (passableChParamW(*(strW + i)))
-                    return lastError = NODE_ARG_ERR;
+                    return lastError = CMD_NODE_ERR_ARG;
             }
         }
         memset(node->parameter_string, 0, sizeof(node->parameter_string));
         wcscpy(node->parameter_string, strW);
 #else
-        lastError = NODE_UNSUPPORT;
+        lastError = CMD_NODE_ERR_UNSUPPORT;
         return lastError;
 #endif
     }
     break;
     }
-    return lastError = NODE_OK;
+    return lastError = CMD_NODE_OK;
 }
 
 /**
@@ -1055,132 +947,86 @@ static int AssignParameterNodeStr(parameter_node* node,
  * @param hook 参数的处理函数
  * @param isRaw 是否给 hook 传递源字符串
  * @param paramStr 参数
- * @return OK: NODE_OK
- * @return ERROR: NODE_CMD_NODE_NULL, NODE_ARG_ERR, NODE_PARAM_TOO_LONG,
- * NODE_FAIL, NODE_REPEATING
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_NULLNODE, CMD_NODE_ERR_ARG, CMD_NODE_ERR_PARAM_TOOLONG,
+ * CMD_NODE_ERR_FAIL, CMD_NODE_ERR_REPEATING
  *
  */
-int cmdNode_RegisterParameter(command_node* node,
-    ParameterHandler hook,
+int cmdNode_RegisterParameter(command_node_t* node,
+    handler_fn_t hook,
     const bool isRaw,
     const void* paramStr)
 {
-    parameter_node* paramNode = NULL, * tmp = NULL;
+    parameter_node_t* paramNode = NULL, * repeating = NULL;
     const char* warningStr = "Not the same configuration(isWch)\
  as the command node...\n";
     if (node == NULL)// 若传入的 node 为 NULL 则会访问错误的地址, 所以先判断
-        return lastError = NODE_CMD_NODE_NULL;
+        return lastError = CMD_NODE_ERR_NULLNODE;
 
     if (hook == NULL)
     {
         printf("this hook is NULL.");
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
     }
 
     if (paramStr == NULL)
     {
         printf("The parameter is null, exit func:<%s>", __func__);
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
     }
 
-    paramNode = node->ParameterNode_head;
-    if (paramNode == NULL)
+    // 参数名称重复检查
+    repeating = FindParameter(node, paramStr);
+    if (repeating != NULL)
     {
-        paramNode = (parameter_node*)malloc(sizeof(parameter_node));
-        CHECK_BUF(paramNode);
-        if (AssignParameterNodeStr(paramNode, node->isWch, paramStr) != NODE_OK)
-        {
-            free(paramNode);
-            return lastError;
-        }
-        paramNode->handler = hook;
-        paramNode->isRawStr = isRaw;
-
-        paramNode->prev = node;
-        paramNode->next = paramNode;
-        node->ParameterNode_head = paramNode;
-#if NODE_DEBUG
-        (node->isWch)
-            ? wprintf(L"<%ls><%ls> %ls\n",
-                node->command_string, (wchar_t*)(paramStr), successStrW)
-            : printf("<%s><%s> %s\n",
-                (char*)(node->command_string), (char*)(paramStr), successStr);
-#endif
-        return lastError = NODE_OK;
+        printf("The same parameter already exists...\n");
+        return lastError = CMD_NODE_ERR_REPEATING;
     }
-    else
+
+    paramNode = (parameter_node_t*)malloc(sizeof(parameter_node_t));
+    CHECK_BUF(paramNode);
+    if (AssignParameterNodeStr(paramNode, node->isWch, paramStr) != CMD_NODE_OK)
     {
-        paramNode = FindParameter(node, paramStr);
-        if (paramNode != NULL)// 参数名称重复检查
-        {
-            printf("The same parameter already exists...\n");
-            return lastError = NODE_REPEATING;
-        }
-        paramNode = (parameter_node*)malloc(sizeof(parameter_node));
-        CHECK_BUF(paramNode);
-        if (AssignParameterNodeStr(paramNode, node->isWch, paramStr) != NODE_OK)
-        {
-            free(paramNode);
-            return lastError;
-        }
-        paramNode->handler = hook;
-        paramNode->isRawStr = isRaw;
-        tmp = ParameterFinalNode(node);
-
-        paramNode->prev = tmp;
-        tmp->next = paramNode;
-        paramNode->next = node->ParameterNode_head;
-#if NODE_DEBUG
-        (node->isWch)
-            ? wprintf(L"<%ls><%ls> %ls\n",
-                node->command_string, (wchar_t*)(paramStr), successStrW)
-            : printf("<%s><%s> %s\n",
-                (char*)(node->command_string), (char*)(paramStr), successStr);
-#endif
-        return lastError = NODE_OK;
+        free(paramNode);
+        return lastError;
     }
-    return lastError = NODE_FAIL;
+    paramNode->handler = hook;
+    paramNode->isRawStr = isRaw;
+
+    // 使用第三方库 list_add_tail 添加到参数链表尾部
+    list_add_tail(&paramNode->node, &node->param_head);
+#if NODE_DEBUG
+    (node->isWch)
+        ? wprintf(L"<%ls><%ls> %ls\n",
+            node->command_string, (wchar_t*)(paramStr), successStrW)
+        : printf("<%s><%s> %s\n",
+            (char*)(node->command_string), (char*)(paramStr), successStr);
+#endif
+    return lastError = CMD_NODE_OK;
 }
 
 /**
  * @brief 取消注册参数
  * @param node 要被删除参数的命令
  * @param paramStr 参数
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR, NODE_NOT_FIND_PARAM, NODE_FAIL, NODE_PARAM_TOO_LONG
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG, CMD_NODE_ERR_NOT_FINDPARAM, CMD_NODE_ERR_FAIL, CMD_NODE_ERR_PARAM_TOOLONG
  */
-int cmdNode_unRegisterParameter(command_node* node,
+int cmdNode_unRegisterParameter(command_node_t* node,
     const void* paramStr)
 {
-    parameter_node* paramNode = NULL, * tmp = NULL;
+    parameter_node_t* paramNode = NULL;
     if (node == NULL)
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
 
     if (paramStr == NULL)
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
 
     paramNode = FindParameter(node, paramStr);
     if (paramNode) // 通过 parameter 寻找 ParameterNode
     {
-        tmp = ParameterFinalNode(node);
-        if (paramNode == node->ParameterNode_head)
-        {
-            // 头节点被移除, 更新头节点
-            node->ParameterNode_head = paramNode->next;
-            ((parameter_node*)(node->ParameterNode_head))->prev = node;
-
-            // 更新末端节点
-            tmp->next = node->ParameterNode_head;
-        }
-        else
-        {
-            // 更改当前节点的邻居节点对本节点的指针
-            ((parameter_node*)(paramNode->prev))->next = paramNode->next;
-            ((parameter_node*)(paramNode->next))->prev = paramNode->prev;
-        }
-
-        paramNode->next = NULL;
-        paramNode->prev = NULL;
+        // 使用第三方库 list_del 从链表移除
+        list_del(&paramNode->node);
 
 #if (ENABLE_WCHAR == 1)
         (node->isWch)
@@ -1194,7 +1040,7 @@ int cmdNode_unRegisterParameter(command_node* node,
 #endif
 
         free(paramNode);
-        return lastError = NODE_OK;
+        return lastError = CMD_NODE_OK;
     }
     else
     {
@@ -1207,7 +1053,7 @@ int cmdNode_unRegisterParameter(command_node* node,
 #endif
         return lastError;
     }
-    return lastError = NODE_FAIL;
+    return lastError = CMD_NODE_ERR_FAIL;
 }
 
 /**
@@ -1217,30 +1063,30 @@ int cmdNode_unRegisterParameter(command_node* node,
  * @param isRaw 是否传递原始字符串作为 hook 的参数
  * @param oldParam 旧参数
  * @param newParam 新参数
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR, NODE_REPEATING, NODE_NOT_FIND_PARAM
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG, CMD_NODE_ERR_REPEATING, CMD_NODE_ERR_NOT_FINDPARAM
  */
-int cmdNode_updateParameter(const command_node* CmdNode, ParameterHandler hook,
+int cmdNode_updateParameter(const command_node_t* CmdNode, handler_fn_t hook,
     const bool isRaw, const void* oldParam, const void* newParam)
 {
     const char* charWarning = "this string has illegal character...";
-    parameter_node* ParamNode = NULL;
+    parameter_node_t* ParamNode = NULL;
     char* oldStr = NULL, * newStr = NULL;
     wchar_t* oldStrW = NULL, * newStrW = NULL;
     size_t len = 0;
     if (CmdNode == NULL)
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
 
 
     if (oldParam == NULL)
     {
         if (newParam == NULL)
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
     }
     else
     {
         if (newParam == NULL)
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
     }
 
     // 字符串合法检查
@@ -1250,35 +1096,35 @@ int cmdNode_updateParameter(const command_node* CmdNode, ParameterHandler hook,
     {
         oldStr = (char*)oldParam;
         if (oldStr == NULL)
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
 
         len = strlen(oldStr);
         if (len > (MAX_PARAMETER * sizeof(wchar_t) - 1))
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
 
         for (size_t i = 0; i < len; i++)
         {
             if (passableChParam(*(oldStr + i)))
             {
                 printf("%s\n", charWarning);
-                return lastError = NODE_ARG_ERR;
+                return lastError = CMD_NODE_ERR_ARG;
             }
         }
 
         newStr = (char*)newParam;
         if (newStr == NULL)
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
 
         len = strlen(newStr);
         if (len > (MAX_PARAMETER * sizeof(wchar_t) - 1))
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
 
         for (size_t i = 0; i < len; i++)
         {
             if (passableChParam(*(newStr + i)))
             {
                 printf("%s\n", charWarning);
-                return lastError = NODE_ARG_ERR;
+                return lastError = CMD_NODE_ERR_ARG;
             }
         }
     }
@@ -1288,39 +1134,39 @@ int cmdNode_updateParameter(const command_node* CmdNode, ParameterHandler hook,
 #if (ENABLE_WCHAR == 1)
         oldStrW = (wchar_t*)oldParam;
         if (oldStrW == NULL)
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
 
         len = wcslen(oldStrW);
         if (len > (MAX_PARAMETER - 1))
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
 
         for (size_t i = 0; i < len; i++)
         {
             if (passableChParamW(*(oldStrW + i)))
             {
                 printf("%s...\n", charWarning);
-                return lastError = NODE_ARG_ERR;
+                return lastError = CMD_NODE_ERR_ARG;
             }
         }
 
         newStrW = (wchar_t*)newParam;
         if (newStrW == NULL)
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
 
         len = wcslen(newStrW);
         if (len > (MAX_PARAMETER - 1))
-            return lastError = NODE_ARG_ERR;
+            return lastError = CMD_NODE_ERR_ARG;
 
         for (size_t i = 0; i < len; i++)
         {
             if (passableChParamW(*(newStrW + i)))
             {
                 printf("%s\n", charWarning);
-                return lastError = NODE_ARG_ERR;
+                return lastError = CMD_NODE_ERR_ARG;
             }
         }
 #else
-        lastError = NODE_UNSUPPORT;
+        lastError = CMD_NODE_ERR_UNSUPPORT;
         return lastError;
 #endif
     }
@@ -1339,7 +1185,7 @@ int cmdNode_updateParameter(const command_node* CmdNode, ParameterHandler hook,
 #else
         printf("<%s> <%s>not find\n", (char*)(CmdNode->command_string), (char*)oldParam);
 #endif
-        return lastError = NODE_NOT_FIND_PARAM;
+        return lastError = CMD_NODE_ERR_NOT_FINDPARAM;
     }
 
     // 检查新参数是否已经存在
@@ -1355,12 +1201,12 @@ int cmdNode_updateParameter(const command_node* CmdNode, ParameterHandler hook,
         printf("The same param<%s> already exists,\
  it has reverted to the old param<%s> name.\n", (char*)newParam, (char*)oldParam);
 #endif
-        return lastError = NODE_REPEATING;
+        return lastError = CMD_NODE_ERR_REPEATING;
     }
 
     // 修改参数
     lastError = AssignParameterNodeStr(ParamNode, CmdNode->isWch, newParam);
-    if (lastError != NODE_OK)
+    if (lastError != CMD_NODE_OK)
         return lastError;
     ParamNode->handler = hook;
     return lastError;
@@ -1370,21 +1216,21 @@ int cmdNode_updateParameter(const command_node* CmdNode, ParameterHandler hook,
 /**
  * @brief 命令解析
  * @param commandString 用户输入的字符串
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR, NODE_CMD_TOO_LONG, NODE_PARAM_TOO_LONG,
- * NODE_NOT_FIND_CMD, NODE_NOT_FIND_PARAM, NODE_PARSE_ERR
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG, CMD_NODE_ERR_TOOLONG, CMD_NODE_ERR_PARAM_TOOLONG,
+ * CMD_NODE_ERR_NOT_FINDCMD, CMD_NODE_ERR_NOT_FINDPARAM, CMD_NODE_ERR_PARSE
  */
 int cmdNode_CommandParse(const char* commandString)
 {
     const char* spaceStr = " ";
-    command_node* CmdNode = NULL;
-    parameter_node* ParamNode = NULL;
+    command_node_t* CmdNode = NULL;
+    parameter_node_t* ParamNode = NULL;
     userString* userData = NULL;
     char cmd[MAX_COMMAND] = { 0 };
     char param[MAX_PARAMETER] = { 0 };
     size_t len = 0;
     if (commandString == NULL)
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
 
     ParseSpace(commandString);
     switch (userParse_GetUserParamCnt())
@@ -1477,11 +1323,11 @@ int cmdNode_CommandParse(const char* commandString)
 #endif
         if (ParamNode->handler == NULL)
         {
-            lastError = NODE_NO_HANDLER;
+            lastError = CMD_NODE_ERR_NOHANDLER;
             goto _err;
         }
         ParamNode->handler(ParamNode->handlerArg);
-        lastError = NODE_OK;
+        lastError = CMD_NODE_OK;
         break;
     }
 
@@ -1502,53 +1348,56 @@ _err:
 /**
  * @brief 命令解析( 宽字符 )
  * @param commandString 用户输入的字符串
- * @return OK: NODE_OK
- * @return ERROR: NODE_ARG_ERR, NODE_CMD_TOO_LONG, NODE_PARAM_TOO_LONG,
- * NODE_NOT_FIND_CMD, NODE_NOT_FIND_PARAM, NODE_PARSE_ERR
+ * @return OK: CMD_NODE_OK
+ * @return ERROR: CMD_NODE_ERR_ARG, CMD_NODE_ERR_TOOLONG, CMD_NODE_ERR_PARAM_TOOLONG,
+ * CMD_NODE_ERR_NOT_FINDCMD, CMD_NODE_ERR_NOT_FINDPARAM, CMD_NODE_ERR_PARSE
  */
 
 int cmdNode_CommandParseW(const wchar_t* commandString)
 {
-    const wchar_t* spaceStr = L" ";
-    command_node* CmdNode = NULL;
-    parameter_node* ParamNode = NULL;
+    command_node_t* CmdNode = NULL;
+    parameter_node_t* ParamNode = NULL;
+    userString* userData = NULL;
     wchar_t cmd[MAX_COMMAND] = { 0 };
     wchar_t param[MAX_PARAMETER] = { 0 };
-    const wchar_t* tmp = NULL, * tmp2 = NULL;
-    size_t len = 0;
     if (commandString == NULL)
-        return lastError = NODE_ARG_ERR;
+        return lastError = CMD_NODE_ERR_ARG;
 
     ParseSpaceW(commandString);
+    userData = userParse_pUserData();
     switch (userParse_GetUserParamCnt())
     {
     case 0:break;
     case 1: {
-        memcpy(cmd, userData, (userData[0].len) * sizeof(wchar_t));
+        if (userData == NULL)
+            break;
+        memcpy(cmd, userData[0].strHead, (userData[0].len) * sizeof(wchar_t));
         CmdNode = cmdNode_FindCommand(NULL, cmd);
         if (CmdNode == NULL)
         {
-            wprintf(L"<%ls>The command was not found.\n", tmp2);
+            wprintf(L"<%ls>The command was not found.\n", cmd);
             break;
         }
-        wprintf(L"<%ls>There is no input parameter for this command...\n", tmp2);
+        wprintf(L"<%ls>There is no input parameter for this command...\n", cmd);
         cmdNode_showParam(CmdNode);
         break;
     }
     case 2:
     default: {
+        if (userData == NULL)
+            break;
         memcpy(cmd, userData[0].strHead, (userData[0].len) * sizeof(wchar_t));
         memcpy(param, userData[1].strHead, (userData[1].len) * sizeof(wchar_t));
         CmdNode = cmdNode_FindCommand(NULL, cmd);
         if (CmdNode == NULL)
         {
-            wprintf(L"<%ls>The command was not found.\n", tmp2);
+            wprintf(L"<%ls>The command was not found.\n", cmd);
             break;
         }
-        ParamNode = cmdNode_FindParameter(CmdNode, tmp2);
+        ParamNode = FindParameter(CmdNode, param);
         if (ParamNode == NULL)
         {
-            wprintf(L"<%ls><%ls>Parameter not found in current command...\n", cmd, tmp2);
+            wprintf(L"<%ls><%ls>Parameter not found in current command...\n", cmd, param);
             break;
         }
 
@@ -1556,7 +1405,7 @@ int cmdNode_CommandParseW(const wchar_t* commandString)
         if (userParse_GetUserParamCnt() > 2)
             ParamNode->handlerArg = (ParamNode->isRawStr) ? userData[2].strHead : &userData[2];
         ParamNode->handler(ParamNode->handlerArg);
-        lastError = NODE_OK;
+        lastError = CMD_NODE_OK;
         break;
     }
     }
@@ -1575,53 +1424,53 @@ int cmdNode_CommandParseW(const wchar_t* commandString)
  * @param
  * @return lastError
  */
-int cmdNode_GetLastError(void)
+cmd_err_t cmdNode_GetLastError(void)
 {
     switch (lastError)
     {
-    case NODE_OK:
+    case CMD_NODE_OK:
         DEBUG_PRINT("NODE OK\n");
         break;
-    case NODE_FAIL:
+    case CMD_NODE_ERR_FAIL:
         DEBUG_PRINT("NODE unknow error\n");
         break;
-    case NODE_ARG_ERR:
+    case CMD_NODE_ERR_ARG:
         DEBUG_PRINT("NODE parameter passing error\n");
         break;
-    case NODE_NOT_FIND:
+    case CMD_NODE_ERR_NOT_FIND:
         DEBUG_PRINT("NODE not find\n");
         break;
-    case NODE_NOT_FIND_CMD:
+    case CMD_NODE_ERR_NOT_FINDCMD:
         DEBUG_PRINT("NODE not found command\n");
         break;
-    case NODE_NOT_FIND_PARAM:
+    case CMD_NODE_ERR_NOT_FINDPARAM:
         DEBUG_PRINT("NODE not found parameter\n");
         break;
-    case NODE_ALLOC_ERR:
+    case CMD_NODE_ERR_MEM:
         DEBUG_PRINT("NODE Alloc error, maybe RAM is not enough...\n");
         break;
-    case NODE_CMD_NODE_NULL:
+    case CMD_NODE_ERR_NULLNODE:
         DEBUG_PRINT("NODE this command is null\n");
         break;
-    case NODE_PARAM_NODE_NULL:
+    case CMD_NODE_ERR_NULLPARAM:
         DEBUG_PRINT("NODE command has no paramNode\n");
         break;
-    case NODE_REPEATING:
+    case CMD_NODE_ERR_REPEATING:
         DEBUG_PRINT("NODE is repeating create\n");
         break;
-    case NODE_CMD_TOO_LONG:
+    case CMD_NODE_ERR_TOOLONG:
         DEBUG_PRINT("NODE 'command' is too long\n");
         break;
-    case NODE_PARAM_TOO_LONG:
+    case CMD_NODE_ERR_PARAM_TOOLONG:
         DEBUG_PRINT("NODE 'parameter' is too long\n");
         break;
-    case NODE_PARSE_ERR:
+    case CMD_NODE_ERR_PARSE:
         DEBUG_PRINT("NODE parsing string error\n");
         break;
-    case NODE_NOT_YET_INIT:
+    case CMD_NODE_ERR_NOTINIT:
         DEBUG_PRINT("NODEs have not been initialized...\n");
         break;
-    case NODE_NO_HANDLER:
+    case CMD_NODE_ERR_NOHANDLER:
         DEBUG_PRINT("NODE this command have no handler...");
     default:
         ERROR_PRINT("unknow error...");
@@ -1636,34 +1485,33 @@ int cmdNode_GetLastError(void)
  * @param map 节点图的首地址
  * @return map's len
  */
-int NodeGetCommandMap(command_info** map)
+int NodeGetCommandMap(command_info_t** map)
 {
-    command_info* tmp = *map;
-    command_node* current = FristNode;
+    command_info_t* tmp = *map;
+    command_node_t* current = NULL;
     int len = 0;
 
-    if (current == NULL)
+    if (cmd_list_head.next == &cmd_list_head)
     {
         printf("<%s>list null...\n", __func__);
         return 0;
     }
 
-    do
+    list_for_each_entry(current, &cmd_list_head, node)
     {
         len++;
         tmp = *map;// 先保存 map , 预防 realloc 失败导致内存泄露
-        *map = (command_info*)realloc(tmp, len * sizeof(command_info));
+        *map = (command_info_t*)realloc(tmp, len * sizeof(command_info_t));
         if (*map == NULL)
         {
-            lastError = NODE_ALLOC_ERR;
+            lastError = CMD_NODE_ERR_MEM;
             free(tmp);
             return 0;
         }
 
         (*map + len - 1)->command = (void*)(current->command_string);
         (*map + len - 1)->node = (void*)current;
-        current = current->next;
-    } while (current != FristNode);
+    }
     return len;
 }
 
@@ -1676,8 +1524,8 @@ static void regCmd(void* arg)
 {
     userString* data = (userString*)arg;
     char cmd[MAX_COMMAND] = { 0 };
-    int err = NODE_OK;
-    command_node* cmdNode = NULL;
+    int err = CMD_NODE_OK;
+    command_node_t* cmdNode = NULL;
     if (data == NULL)
     {
         printf("<%s>userParam error\n", __func__);
@@ -1688,7 +1536,7 @@ static void regCmd(void* arg)
     printf("<%s>parse cmd:<%s>\n", __func__, cmd);
     cmdNode = cmdNode_FindCommand(cmd, NULL);
     err = cmdNode_GetLastError();
-    if (cmdNode == NULL && (err == NODE_NOT_YET_INIT || err == NODE_NOT_FIND_CMD))
+    if (cmdNode == NULL && (err == CMD_NODE_ERR_NOTINIT || err == CMD_NODE_ERR_NOT_FINDCMD))
     {
         cmdNode_RegisterCommand(0, cmd);
         cmdNode_GetLastError();
@@ -1713,7 +1561,7 @@ static void regParam(void* arg)
     char cmdArr[MAX_COMMAND] = { 0 },
         paramArr[MAX_PARAMETER] = { 0 },
         funcArr[32] = { 0 };
-    command_node* cmdNode = NULL;
+    command_node_t* cmdNode = NULL;
     size_t paramPos = 0, paramCnt = userParse_GetUserParamCnt();
     if (data == NULL)
     {
@@ -1801,7 +1649,7 @@ static void regDelAllParam(void* arg)
 {
     userString* data = (userString*)arg;
     char cmd[MAX_COMMAND] = { 0 };
-    command_node* cmdNode = NULL;
+    command_node_t* cmdNode = NULL;
     if (data == NULL)
     {
         printf("<%s>userParam error\n", __func__);
@@ -1841,7 +1689,7 @@ static void regDelParam(void* arg)
     char cmdArr[MAX_COMMAND] = { 0 },
         paramArr[MAX_PARAMETER] = { 0 };
     size_t dataCnt = userParse_GetUserParamCnt();
-    command_node* cmdNode = NULL;
+    command_node_t* cmdNode = NULL;
     if (data == NULL)
     {
         printf("<%s>userParam error\n", __func__);
@@ -1889,7 +1737,7 @@ static void regDelParam(void* arg)
 static void regDelAllCmd(void* arg)
 {
     int len = 0;
-    command_info* Map = NULL;
+    command_info_t* Map = NULL;
     len = NodeGetCommandMap(&Map);
     if (len == 0 || Map == NULL)
     {
@@ -1900,7 +1748,7 @@ static void regDelAllCmd(void* arg)
 
     for (size_t i = 0; i < len; i++)
     {
-        switch (((command_node*)((Map + i)->node))->isWch)
+        switch (((command_node_t*)((Map + i)->node))->isWch)
         {
         case false:
         {
@@ -1932,7 +1780,7 @@ static void regDelAllCmd(void* arg)
 int defaultRegCmd_init(void)
 {
 
-    command_node* CmdNode = NULL;
+    command_node_t* CmdNode = NULL;
     cmdNode_RegisterCommand(0, DEFAULT_CMD);
     CmdNode = cmdNode_FindCommand(DEFAULT_CMD, NULL);
     if (CmdNode == NULL)
